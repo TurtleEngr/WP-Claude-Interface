@@ -6,7 +6,7 @@
  * Author: Volkan Kücükbudak
  */
 
-// Definiere die verfügbaren Modelle
+// Define the available models
 define('CLAUDE_MODELS', [
     'claude-3-haiku-20240307' => 'Claude 3 Haiku',
     'claude-3-sonnet-20240229' => 'Claude 3 Sonnet',
@@ -72,13 +72,13 @@ function claude_chat_api_request($message) {
     $temperature = get_option('claude_chat_temperature');
     $max_tokens = get_option('claude_chat_max_tokens');
 
-    // Verwende den richtigen API-Endpunkt
+    // Use the correct API endpoint
     $url = 'https://api.anthropic.com/v1/messages';
 
     $headers = array(
         'Content-Type' => 'application/json',
         'x-api-key' => $api_key,
-        'anthropic-version' => '2023-06-01', // Beispielhafte API-Version, an die tatsächliche Version anpassen
+        'anthropic-version' => '2023-06-01', // Example API version, adapt to the actual version
     );
 
     $body = array(
