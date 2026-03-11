@@ -4,6 +4,7 @@
  * Description: Adds a Claude AI chat interface to your WordPress site using a shortcode.
  * Version: 1.1
  * Author: Volkan Kücükbudak
+ * Enhancements: TurtleEngr
  */
 
 
@@ -294,10 +295,10 @@ function claude_chat_settings_init() {
         'claude_chat_settings_section',
         array(
             'label_for' => 'claude_chat_temperature',
+            'description' => 'Range: 0 to 1',
             'min' => 0,
             'max' => 1,
             'step' => 0.1,
-            'description' => 'Range: 0 to 1',
         )
     );
 
@@ -309,9 +310,9 @@ function claude_chat_settings_init() {
         'claude_chat_settings_section',
         array(
             'label_for' => 'claude_chat_max_tokens',
+            'description' => 'Range: 1 to 8096',
             'min' => 1,
             'max' => 8096,
-            'description' => 'Range: 1 to 8096',
         )
     );
 
