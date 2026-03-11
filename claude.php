@@ -9,14 +9,13 @@
 
 // Define the available models
 define('CLAUDE_MODELS', [
-        'claude-3-haiku-20240307'      => 'Claude 3 Haiku',
-        'claude-3-sonnet-20240229'     => 'Claude 3 Sonnet',
-        'claude-3-opus-20240229'       => 'Claude 3 Opus',
-        'claude-3-5-sonnet-20240620'   => 'Claude 3.5 Sonnet',
-        'claude-3-5-sonnet-20241022'   => 'Claude 3.5 Sonnet (Oct 2024)',
-        'claude-3-5-haiku-20241022'    => 'Claude 3.5 Haiku',
-        'claude-3-7-sonnet-20250219'   => 'Claude 3.7 Sonnet',
-    ]);
+    'claude-3-haiku-20240307'      => 'Claude 3.0 Haiku',
+    'claude-haiku-4-5-20251001'    => 'Claude 4.5 Haiku',
+    'claude-3-5-haiku-20241022'    => 'Claude 3.5 Haiku',
+    'claude-3-5-sonnet-20241022'   => 'Claude 3.5 Sonnet',
+    'claude-3-7-sonnet-20250219'   => 'Claude 3.7 Sonnet',
+    'claude-sonnet-4-5-20250929'   => 'Claude 4.5 Sonnet',
+]);
 
 // ---------------------------------------------------------------------------
 // Settings registration
