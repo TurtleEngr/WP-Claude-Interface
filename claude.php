@@ -345,6 +345,9 @@ function claude_chat_text_field_callback($args) {
         . '" name="'                  . esc_attr($args['label_for'])
         . '" value="'                 . esc_attr($option)
         . '" class="regular-text">';
+    if ( ! empty($args['description'])) {
+       echo '<p class="description">' . wp_kses($args['description'], array('code' => array())) . '</p>';
+    }
 }
 
 
@@ -358,6 +361,9 @@ function claude_chat_number_field_callback($args) {
         . '" max="'                   . esc_attr($args['max'])
         . '" step="'                  . (isset($args['step']) ? esc_attr($args['step']) : '1')
         . '">';
+    if ( ! empty($args['description'])) {
+       echo '<p class="description">' . wp_kses($args['description'], array('code' => array())) . '</p>';
+    }
 }
 
 
@@ -372,6 +378,9 @@ function claude_chat_model_dropdown_callback($args) {
             . esc_html($model_name) . '</option>';
     }
     echo '</select>';
+    if ( ! empty($args['description'])) {
+       echo '<p class="description">' . wp_kses($args['description'], array('code' => array())) . '</p>';
+    }
 }
 
 
