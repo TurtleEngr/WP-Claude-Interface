@@ -26,7 +26,6 @@ function claude_chat_register_settings() {
     register_setting('claude_chat_options', 'claude_chat_model');
     register_setting('claude_chat_options', 'claude_chat_temperature');
     register_setting('claude_chat_options', 'claude_chat_max_tokens');
-    // NEW: prefix prompt setting
     register_setting('claude_chat_options', 'claude_chat_prefix_prompt', [
             'sanitize_callback' => 'sanitize_textarea_field',
         ]);
@@ -293,7 +292,13 @@ function claude_chat_settings_init() {
         'claude_chat_number_field_callback',
         'claude-chat-settings',
         'claude_chat_settings_section',
-        array('label_for' => 'claude_chat_temperature', 'min' => 0, 'max' => 1, 'step' => 0.1)
+        array(
+            'label_for' => 'claude_chat_temperature',
+            'min' => 0,
+            'max' => 1,
+            'step' => 0.1,
+            'description' => 'Range: 0 to 1',
+        )
     );
 
     add_settings_field(
@@ -302,10 +307,14 @@ function claude_chat_settings_init() {
         'claude_chat_number_field_callback',
         'claude-chat-settings',
         'claude_chat_settings_section',
-        array('label_for' => 'claude_chat_max_tokens', 'min' => 1, 'max' => 8096)
+        array(
+            'label_for' => 'claude_chat_max_tokens',
+            'min' => 1,
+            'max' => 8096,
+            'description' => 'Range: 1 to 8096',
+        )
     );
 
-    // NEW: Prefix Prompt field
     add_settings_field(
         'claude_chat_prefix_prompt',
         'Prefix Prompt',
@@ -314,10 +323,7 @@ function claude_chat_settings_init() {
         'claude_chat_settings_section',
         array(
             'label_for'   => 'claude_chat_prefix_prompt',
-            'description' => 'Optional. This text is prepended to every user message before it is '
-            . 'sent to the Claude API. It is sent with <code>cache_control</code> '
-            . '(ephemeral) so the block is eligible for prompt caching, reducing '
-            . 'latency and cost on repeated requests. Leave blank to disable.',
+            'description' => 'Optional. This text is prepended to every user message before it is sent to the Claude API. It is sent with <code>cache_control</code> (ephemeral) so the block is eligible for prompt caching, reducing latency and cost on repeated requests. Leave blank to disable.',
         )
     );
 }
@@ -368,7 +374,6 @@ function claude_chat_model_dropdown_callback($args) {
 }
 
 
-// NEW: textarea callback for the prefix prompt
 function claude_chat_textarea_field_callback($args) {
     $option = get_option($args['label_for'], '');
     echo '<textarea id="'   . esc_attr($args['label_for'])
