@@ -17,6 +17,7 @@ clean :
 
 dist-clean : clean
 	-rm -rf dist
+	-rm README.html 
 
 build : dist/claude-chat-interface
 	rsync -r $(mDistList) dist/claude-chat-interface/

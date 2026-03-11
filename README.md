@@ -52,6 +52,66 @@ Go to 'Settings' > 'Claude Chat' in the WordPress admin panel to configure the f
 - **Styling**: Customize the chat interface by editing the `css/claude-chat.css` file.
 - **JavaScript**: Add or modify functionality by editing the `js/claude-chat.js` file.
 
+## Enhancements
+
+### 1. Added new setting: `claude_chat_prefix_prompt`
+
+Registered in claude_chat_register_settings() with
+sanitize_textarea_field as its sanitize callback (multi-line safe).
+
+### 2. New settings field: Prefix Prompt
+
+Added at the bottom of the settings form via
+`claude_chat_settings_init().` It uses a new
+`claude_chat_textarea_field_callback()` that renders a &lt;textarea> (6
+rows × 60 cols) with a description explaining the caching
+behaviour. Leaving it blank disables the feature entirely.
+
+### 3. `claude_chat_api_request()` — prefix + cache_control
+
+When a prefix is saved, the user message is sent as a two-block
+content array instead of a plain string.
+
+The cache_control: ephemeral block tells Anthropic's API to cache the
+prefix across repeated requests — reducing latency and token cost for
+long system-style prompts. The anthropic-beta:
+prompt-caching-2024-07-31 header is added automatically to enable this
+feature.
+
+### 4. `claude_chat_strip_prefix()` — response cleanup
+
+After the API reply is received, this helper checks
+(case-insensitively) whether the response begins with the prefix text
+and strips it if so. Claude won't normally echo the prefix back, but
+this guards against edge cases where it does.
+
+### 5. Minor improvements
+
+Added newer models to `CLAUDE_MODELS` (Claude 3.5 Haiku, Claude 3.5
+Sonnet Oct 2024, Claude 3.7 Sonnet).
+
+Fixed temperature to only be sent when it's actually set (previously 0
+would be silently dropped).
+
+Bumped Max Tokens ceiling to 8096 to match modern model limits.
+
+### 6. js or css changes?
+
+No — no changes are needed to either file. Here's why:
+
+js/claude-chat.js — The JavaScript only handles the chat UI: capturing
+the user's input, sending it to admin-ajax.php via AJAX, and
+displaying the response. None of that flow changed. The prefix is
+added (and stripped) entirely on the PHP/server side, invisibly to the
+JS layer.
+
+css/claude-chat.css — The new Prefix Prompt field in the admin
+settings form uses standard WordPress admin classes (large-text, code,
+description) that are already styled by WordPress core. No custom CSS
+is needed.
+
+All changes were self-contained within claude.php.
+
 ## Requirements
 
 - **WordPress**: Version 5.0 or higher.
