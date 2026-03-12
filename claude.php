@@ -18,10 +18,7 @@ define('CLAUDE_MODELS', [
     'claude-sonnet-4-5-20250929'   => 'Claude 4.5 Sonnet',
 ]);
 
-// ---------------------------------------------------------------------------
 // Settings registration
-// ---------------------------------------------------------------------------
-
 function claude_chat_register_settings() {
     register_setting('claude_chat_options', 'claude_chat_api_key');
     register_setting('claude_chat_options', 'claude_chat_model');
@@ -33,10 +30,7 @@ function claude_chat_register_settings() {
 }
 add_action('admin_init', 'claude_chat_register_settings');
 
-// ---------------------------------------------------------------------------
 // Enqueue scripts / styles
-// ---------------------------------------------------------------------------
-
 function claude_chat_enqueue_scripts() {
     wp_enqueue_style('claude-chat-style', plugin_dir_url(__FILE__) . 'css/claude-chat.css');
     wp_enqueue_script('claude-chat-script', plugin_dir_url(__FILE__) . 'js/claude-chat.js', array('jquery'), '1.1', true);
@@ -47,10 +41,7 @@ function claude_chat_enqueue_scripts() {
 }
 add_action('wp_enqueue_scripts', 'claude_chat_enqueue_scripts');
 
-// ---------------------------------------------------------------------------
 // Shortcode
-// ---------------------------------------------------------------------------
-
 function claude_chat_shortcode() {
     ob_start();
 ?>
@@ -64,10 +55,7 @@ function claude_chat_shortcode() {
 }
 add_shortcode('claude_chat', 'claude_chat_shortcode');
 
-// ---------------------------------------------------------------------------
 // AJAX handler
-// ---------------------------------------------------------------------------
-
 function claude_chat_ajax_handler() {
     check_ajax_referer('claude-chat-nonce', 'nonce');
 
@@ -84,10 +72,7 @@ function claude_chat_ajax_handler() {
 add_action('wp_ajax_claude_chat',        'claude_chat_ajax_handler');
 add_action('wp_ajax_nopriv_claude_chat', 'claude_chat_ajax_handler');
 
-// ---------------------------------------------------------------------------
 // Claude API request
-// ---------------------------------------------------------------------------
-
 function claude_chat_api_request($message) {
     $api_key       = get_option('claude_chat_api_key');
     $model         = get_option('claude_chat_model');
@@ -200,7 +185,6 @@ function claude_chat_api_request($message) {
 // appears there (case-insensitively, ignoring leading/trailing whitespace).
 // Also removes any leading whitespace that remains after stripping.
 // ---------------------------------------------------------------------------
-
 function claude_chat_strip_prefix($response, $prefix) {
     $response_trimmed = ltrim($response);
     $prefix_len       = strlen($prefix);
@@ -212,20 +196,14 @@ function claude_chat_strip_prefix($response, $prefix) {
     return $response;
 }
 
-// ---------------------------------------------------------------------------
 // Logging
-// ---------------------------------------------------------------------------
-
 function claude_chat_log_error($error_type, $error_message) {
     $log_message = date('Y-m-d H:i:s') . " - $error_type: $error_message\n";
     $log_file    = plugin_dir_path(__FILE__) . 'claude-chat-error.log';
     error_log($log_message, 3, $log_file);
 }
 
-// ---------------------------------------------------------------------------
 // Admin menu
-// ---------------------------------------------------------------------------
-
 function claude_chat_settings_page() {
     add_options_page(
         'Claude Chat Settings',
@@ -237,30 +215,23 @@ function claude_chat_settings_page() {
 }
 add_action('admin_menu', 'claude_chat_settings_page');
 
-// ---------------------------------------------------------------------------
 // Settings page HTML
-// ---------------------------------------------------------------------------
-
 function claude_chat_settings_page_html() {
 ?>
     <div class="wrap">
         <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
         <form action="options.php" method="post">
             <?php
-    settings_fields('claude_chat_options');
-    do_settings_sections('claude-chat-settings');
-    submit_button('Save Settings');
-?>
+            settings_fields('claude_chat_options');
+            do_settings_sections('claude-chat-settings');
+            submit_button('Save Settings');
+            ?>
         </form>
     </div>
     <?php
 }
 
-
-// ---------------------------------------------------------------------------
 // Settings fields init
-// ---------------------------------------------------------------------------
-
 function claude_chat_settings_init() {
     add_settings_section(
         'claude_chat_settings_section',
@@ -330,10 +301,7 @@ function claude_chat_settings_init() {
 }
 add_action('admin_init', 'claude_chat_settings_init');
 
-// ---------------------------------------------------------------------------
 // Field render callbacks
-// ---------------------------------------------------------------------------
-
 function claude_chat_settings_section_callback($args) {
     echo '<p>Enter your Claude API settings below:</p>';
 }
