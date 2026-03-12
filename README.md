@@ -1,6 +1,6 @@
 
 # Claude Chat Interface (WordPress Plugin)
-![Version](https://img.shields.io/badge/version-1.0-orange.svg)
+![Version](https://img.shields.io/badge/version-1.1-orange.svg)
 ![WordPress](https://img.shields.io/badge/WordPress-Compatible-blue.svg)
 
 Integrate the Claude AI chat interface into your WordPress website using a simple shortcode.
@@ -46,11 +46,68 @@ Go to 'Settings' > 'Claude Chat' in the WordPress admin panel to configure the f
 - **Model**: Select the Claude model you wish to use.
 - **Temperature**: Adjust the randomness of responses (value between 0.0 and 1.0).
 - **Max Tokens**: Set the maximum number of tokens for the response.
+- **Prefix Prompt**: Optinal text can be added before the user's question.
 
 ## Customization
 
 - **Styling**: Customize the chat interface by editing the `css/claude-chat.css` file.
 - **JavaScript**: Add or modify functionality by editing the `js/claude-chat.js` file.
+
+## Enhancements
+
+### Added setting: Prefix Prompt
+
+Registered in claude_chat_register_settings() with
+sanitize_textarea_field as its sanitize callback (multi-line safe).
+
+Added at the bottom of the settings form via
+`claude_chat_settings_init().` It uses
+`claude_chat_textarea_field_callback()` that renders a &lt;textarea>
+(6 rows × 60 cols) with a description explaining the caching
+behaviour. Leaving it blank disables the feature entirely.
+
+**prefix + cache_control** - `claude_chat_api_request()`
+
+When a prefix is saved, the user message is sent as a two-block
+content array instead of a plain string.
+
+The cache_control: ephemeral block tells Anthropic's API to cache the
+prefix across repeated requests — reducing latency and token cost for
+long system-style prompts. The anthropic-beta:
+prompt-caching-2024-07-31 header is added automatically to enable this
+feature.
+
+**response cleanup** - `claude_chat_strip_prefix()`
+
+After the API reply is received, this helper checks
+(case-insensitively) whether the response begins with the prefix text
+and strips it if so. Claude won't normally echo the prefix back, but
+this guards against edge cases where it does.
+
+### Minor improvements
+
+Added newer models to `CLAUDE_MODELS` (Claude 3.5 Haiku, Claude 3.5
+Sonnet Oct 2024, Claude 3.7 Sonnet).
+
+Fixed temperature to only be sent when it's actually set (previously 0
+would be silently dropped).
+
+Bumped Max Tokens ceiling to 8096 to match modern model limits.
+
+### js or css changes?
+
+No changes.
+
+js/claude-chat.js — The JavaScript only handles the chat UI: capturing
+the user's input, sending it to admin-ajax.php via AJAX, and
+displaying the response. None of that flow changed. The prefix prompt is
+added (and stripped) entirely on the PHP/server side, invisibly to the
+JS layer.
+
+css/claude-chat.css — The new Prefix Prompt field in the admin
+settings form uses standard WordPress admin classes (large-text, code,
+description) that are already styled by WordPress core. No custom CSS
+is needed.
 
 ## Requirements
 
