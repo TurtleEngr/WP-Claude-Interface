@@ -4,7 +4,7 @@ Contributors: aicodecraft
 Donate link: https://aicodecraft.io/donate
 Tags: chat, AI, Claude, WordPress
 Requires at least: 5.0
-Tested up to: 6.0
+Tested up to: 6.9.3
 Stable tag: 1.0
 License: GPL2
 License URI: https://dbad-license.org/
@@ -37,6 +37,9 @@ You need to register with Claude AI to obtain your API key.
 2. Chat interface displayed on a WordPress page.
 
 == Changelog ==
+
+= 1.1 =
+* Prefix prompt enhancement.
 
 = 1.0 =
 * Initial release of Claude Chat Interface.

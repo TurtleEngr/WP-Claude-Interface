@@ -6,7 +6,8 @@ mDistList = \
 	js \
 	claude.php \
 	claude3.png \
-	claude_set.png
+	claude_set.png \
+	readme.txt
 
 # ----------
 # Main Targets
@@ -19,7 +20,6 @@ dist-clean : clean
 
 build : dist/claude-chat-interface
 	rsync -r $(mDistList) dist/claude-chat-interface/
-	cp README.md dist/claude-chat-interface/readme.txt
 
 # ----------
 # Single Targets
