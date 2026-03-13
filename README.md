@@ -1,13 +1,3 @@
-> [!IMPORTANT]
-> This repository is archived. Most people just want a ready-made product and don't want to learn from boilerplates — that's fine, but it's not what this was built for.
->
-> If you need a real AI client for WordPress with full power behind it, check out [WP AI Hub](https://github.com/VolkanSah/WP-AI-HUB) — a thin client for [Multi-LLM API Gateway](https://github.com/VolkanSah/Multi-LLM-API-Gateway).
->
-> Why? Because with one hub on HuggingFace Spaces you can pull Claude via API into WordPress, route DeepSeek through OpenRouter, run Flux or Veo 3 for image/video generation — all at the same time, all through one connection. No 20 different plugins to maintain, no annoying premium limits per plugin, no bloat. Just one hub, all your models, one WordPress client.
->
-> Deploy your own hub, connect it via WP AI Hub — and actually own your AI stack.
-
-
 # Claude Chat Interface (WordPress Plugin)
 ![Version](https://img.shields.io/badge/version-1.1-orange.svg)
 ![WordPress](https://img.shields.io/badge/WordPress-Compatible-blue.svg)
@@ -142,3 +132,26 @@ This plugin is licensed under the DBAD License.
 ## Copyright
 
 **Volkan Sah**
+
+## Note on upsream repository
+
+The repository
+[(VolkanSah/WP-Claude-Interface)][https://github.com/VolkanSah/WP-Claude-Interface]
+is archived. Most people just want a ready-made product and don't want
+to learn from boilerplates — that's fine, but it's not what this was
+built for.
+
+If you need a real AI client for WordPress with full power behind it,
+check out [WP AI Hub](https://github.com/VolkanSah/WP-AI-HUB) — a thin
+client for [Multi-LLM API
+Gateway](https://github.com/VolkanSah/Multi-LLM-API-Gateway).
+
+Why? Because with one hub on HuggingFace Spaces you can pull Claude
+via API into WordPress, route DeepSeek through OpenRouter, run Flux or
+Veo 3 for image/video generation — all at the same time, all through
+one connection. Not 20 different plugins to maintain, no annoying
+premium limits per plugin, no bloat. Just one hub, all your models,
+one WordPress client.
+
+Deploy your own hub, connect it via WP AI Hub — and actually own your
+AI stack.
