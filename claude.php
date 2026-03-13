@@ -18,7 +18,7 @@ define('CLAUDE_MODELS', [
     'claude-sonnet-4-5-20250929'   => 'Claude 4.5 Sonnet',
 ]);
 
-// Settings registration
+// Register settings
 function claude_chat_register_settings() {
     register_setting('claude_chat_options', 'claude_chat_api_key');
     register_setting('claude_chat_options', 'claude_chat_model');
@@ -30,7 +30,7 @@ function claude_chat_register_settings() {
 }
 add_action('admin_init', 'claude_chat_register_settings');
 
-// Enqueue scripts / styles
+// Enqueue necessary scripts and styles
 function claude_chat_enqueue_scripts() {
     wp_enqueue_style('claude-chat-style', plugin_dir_url(__FILE__) . 'css/claude-chat.css');
     wp_enqueue_script('claude-chat-script', plugin_dir_url(__FILE__) . 'js/claude-chat.js', array('jquery'), '1.1', true);
@@ -41,10 +41,10 @@ function claude_chat_enqueue_scripts() {
 }
 add_action('wp_enqueue_scripts', 'claude_chat_enqueue_scripts');
 
-// Shortcode
+// Shortcode to display the chat interface
 function claude_chat_shortcode() {
     ob_start();
-?>
+    ?>
     <div id="claude-chat-interface">
         <div id="claude-chat-messages"></div>
         <input type="text" id="claude-chat-input" placeholder="Ask Claude something...">
@@ -55,14 +55,11 @@ function claude_chat_shortcode() {
 }
 add_shortcode('claude_chat', 'claude_chat_shortcode');
 
-// AJAX handler
+// AJAX handler for chat requests
 function claude_chat_ajax_handler() {
     check_ajax_referer('claude-chat-nonce', 'nonce');
-
     $message = sanitize_text_field($_POST['message']);
-
     $response = claude_chat_api_request($message);
-
     if ($response) {
         wp_send_json_success($response);
     } else {
@@ -72,7 +69,7 @@ function claude_chat_ajax_handler() {
 add_action('wp_ajax_claude_chat',        'claude_chat_ajax_handler');
 add_action('wp_ajax_nopriv_claude_chat', 'claude_chat_ajax_handler');
 
-// Claude API request
+// Claude API request function with logging
 function claude_chat_api_request($message) {
     $api_key       = get_option('claude_chat_api_key');
     $model         = get_option('claude_chat_model');
@@ -80,6 +77,7 @@ function claude_chat_api_request($message) {
     $max_tokens    = get_option('claude_chat_max_tokens');
     $prefix_prompt = get_option('claude_chat_prefix_prompt', '');
 
+    // Use the correct API-Endpoint.
     $url = 'https://api.anthropic.com/v1/messages';
 
     // -----------------------------------------------------------------------
@@ -160,7 +158,7 @@ function claude_chat_api_request($message) {
         //
         // Claude will not normally echo the prefix back, but if it does (e.g.
         // because the prefix instructed it to repeat instructions, or due to
-        // an unexpected model behaviour) we remove it here so the end-user
+        // an unexpected model behavior) we remove it here so the end-user
         // only ever sees the genuine answer.
         // ------------------------------------------------------------------
         if ($prefix_prompt !== '') {
@@ -196,14 +194,14 @@ function claude_chat_strip_prefix($response, $prefix) {
     return $response;
 }
 
-// Logging
+// Logging function
 function claude_chat_log_error($error_type, $error_message) {
     $log_message = date('Y-m-d H:i:s') . " - $error_type: $error_message\n";
     $log_file    = plugin_dir_path(__FILE__) . 'claude-chat-error.log';
     error_log($log_message, 3, $log_file);
 }
 
-// Admin menu
+// Add settings page
 function claude_chat_settings_page() {
     add_options_page(
         'Claude Chat Settings',
@@ -217,7 +215,7 @@ add_action('admin_menu', 'claude_chat_settings_page');
 
 // Settings page HTML
 function claude_chat_settings_page_html() {
-?>
+    ?>
     <div class="wrap">
         <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
         <form action="options.php" method="post">
@@ -231,7 +229,7 @@ function claude_chat_settings_page_html() {
     <?php
 }
 
-// Settings fields init
+// Initialize settings
 function claude_chat_settings_init() {
     add_settings_section(
         'claude_chat_settings_section',
