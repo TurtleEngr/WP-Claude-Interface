@@ -47,7 +47,7 @@ function claude_chat_shortcode() {
     ?>
     <div id="claude-chat-interface">
         <div id="claude-chat-messages"></div>
-        <input type="text" id="claude-chat-input" placeholder="Ask Claude something...">
+        <textarea id="claude-chat-input" placeholder="Ask Claude something..." rows="3"></textarea>
         <button id="claude-chat-submit">Send</button>
     </div>
     <?php
