@@ -6,8 +6,14 @@ jQuery(document).ready(function($) {
             return;
         }
 
+        // If the addon checkbox is present and checked, append the extra prompt.
+        var $addonCheckbox = $('#claude-chat-addon-checkbox');
+        if ($addonCheckbox.length && $addonCheckbox.is(':checked') && claudeChat.addon_prompt) {
+            message = message + '\n' + claudeChat.addon_prompt;
+        }
+
         console.log('Message sent:', message);
-        $('#claude-chat-messages').append('<div class="user-message">' + message + '</div>');
+        $('#claude-chat-messages').append('<div class="user-message">' + $('#claude-chat-input').val() + '</div>');
         $('#claude-chat-input').val('');
 
         $.ajax({
