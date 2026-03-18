@@ -1,9 +1,9 @@
 * ai-help
+- Prompts to Claude to suggest code changes
 ** 2026-03-16 18:52:40 PDT Mon
-
-Given following files, modify the CSS #claude-chat-input to initially be
-3 lines and allow the user to adjust the height Also allow the user to
-make the #claude-chat-messages text box larger.
+- Given following files, modify the CSS #claude-chat-input to
+  initially be 3 lines and allow the user to adjust the height Also
+  allow the user to make the #claude-chat-messages text box larger.
 
 *** File: css/claude-chat.css
 /* css/claude-chat.css */
@@ -569,8 +569,8 @@ changed:**
 
 ** 2026-03-17 08:13:25 PDT Tue
 
-Given following files, add an additional prompt text box to the settings
-form.
+- Given following files, add an additional prompt text box to the
+  settings form.
 
 Settings form:
 - It should have a checkbox to activate or deactivate the prompt.
@@ -954,7 +954,6 @@ function claude_chat_textarea_field_callback($args) {
     }
 }
 
-
 *** File: css/claude-chat.css
 /* css/claude-chat.css */
 #claude-chat-interface {
@@ -1019,7 +1018,6 @@ function claude_chat_textarea_field_callback($args) {
     background-color: #45a049;
 }
 
-
 *** File: js/claude-chat.js
 jQuery(document).ready(function($) {
     $('#claude-chat-submit').on('click', function() {
@@ -1078,9 +1076,7 @@ Here's the plan before I write the code:
     row in the user form.Here's a summary of every change made across
     the three files:
 
----
-
-### `claude.php`
+**** `claude.php`
 
 **Settings registration** (`claude_chat_register_settings`): Three new
   options added — `claude_chat_addon_prompt_enabled` (checkbox),
@@ -1106,9 +1102,7 @@ Here's the plan before I write the code:
   the `claudeChat` JS object so the script can append it client-side
   without an extra AJAX round-trip.
 
----
-
-### `js/claude-chat.js`
+**** `js/claude-chat.js`
 
 Before building the AJAX payload, the script checks whether
 `#claude-chat-addon-checkbox` exists *and* is checked. If both
@@ -1117,9 +1111,7 @@ conditions are true, it appends `'\n' + claudeChat.addon_prompt` to
 (stored before the append), keeping the appended text invisible in the
 chat log.
 
----
-
-### `css/claude-chat.css`
+**** `css/claude-chat.css`
 
 Added a `#claude-chat-addon` block that gives the checkbox row a
 subtle separator (`border-top`), matching background, and flex
