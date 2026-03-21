@@ -54,7 +54,7 @@ Go to 'Settings' > 'Claude Chat' in the WordPress admin panel to configure the f
 
 ## Enhancements
 
-### Added setting: Prefix Prompt
+### Added: Prefix Prompt
 
 Registered in claude_chat_register_settings() with
 sanitize_textarea_field as its sanitize callback (multi-line safe).
@@ -82,6 +82,30 @@ After the API reply is received, this helper checks
 (case-insensitively) whether the response begins with the prefix text
 and strips it if so. Claude won't normally echo the prefix back, but
 this guards against edge cases where it does.
+
+### Added: Additional Prefix Prompt
+
+The user can turn an and additional prompt on or off with a checkbox.
+The Additional Prefix Prompt is added to the settings menu, and
+enabled with a checkbox. The field after the check box is the label
+that will be shown on the user's form.
+
+Use case: add or override directions in the main prompt. Usually this
+would be for changing how look for the answer or how to format the
+output answer.
+
+**`claude.php`**: Register 3 new options (`addon_prompt_enabled`,
+addon_prompt_label`, `addon_prompt_text`), add a single settings field
+with a custom callback rendering all three controls, update the
+shortcode to conditionally render the user-form checkbox, and pass the
+addon prompt text to JS via `wp_localize_script`.
+
+**`js/claude-chat.js`**: Before sending, check if the addon checkbox
+exists and is checked — if so, append the addon prompt text (from the
+localized data) to the message.
+
+**`css/claude-chat.css`**: Add a small style for the addon checkbox
+row in the user form.
 
 ### Minor improvements
 
