@@ -25,9 +25,10 @@ Integrate the Claude AI chat interface into your WordPress website using a simpl
 
 ## Installation
 
-1. Upload the `claude-chat-interface` folder to the `/wp-content/plugins/` directory.
-2. Activate the plugin through the 'Plugins' menu in WordPress.
-3. Navigate to 'Settings' > 'Claude Chat' to configure your API settings.
+1. Run "make package" to build and create the zip package.
+2. Install `pkg/claude-chat-interface.zip` plugin.
+3. Activate the plugin.
+4. Navigate to 'Settings' > 'Claude Chat' to configure your API settings.
 
 ## Usage
 
