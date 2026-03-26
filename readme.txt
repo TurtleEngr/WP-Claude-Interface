@@ -38,6 +38,9 @@ You need to register with Claude AI to obtain your API key.
 
 == Changelog ==
 
+= 1.2 =
+* Additional prefix prompt.
+
 = 1.1 =
 * Prefix prompt enhancement.
 
