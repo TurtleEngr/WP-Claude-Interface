@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Claude 3.x Chat Interface
  * Description: Adds a Claude AI chat interface to your WordPress site using a shortcode.
- * Version: 1.1
+ * Version: 1.2
  * Author: Volkan Kücükbudak
  * Enhancements: TurtleEngr
  */
