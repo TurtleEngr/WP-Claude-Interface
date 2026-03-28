@@ -7,7 +7,8 @@ mDistList = \
 	claude.php \
 	claude3.png \
 	claude_set.png \
-	readme.txt
+	readme.txt \
+	.htacess
 
 # ----------
 # Main Targets
