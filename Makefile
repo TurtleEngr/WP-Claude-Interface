@@ -27,8 +27,5 @@ package : build pkg
 # ----------
 # Single Targets
 
-dist/claude-chat-interface :
-	-mkdir -p $@
-
-pkg :
+dist/claude-chat-interface pkg :
 	-mkdir -p $@
