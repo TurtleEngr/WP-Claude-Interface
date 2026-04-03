@@ -12,17 +12,25 @@ mDistList = \
 # ----------
 # Main Targets
 
-clean :
-	-find . -type f -name '*~' -exec rm {} \;
+usage :
+	@echo Usage
+	@echo build - build dist/ with dirs and files to be installed
+	@echo package - create plugin install zip file
+	@echo clean - rm tmp files
+	@echo dist-clean - clean and remove tmp dirs
 
-dist-clean : clean
-	-rm -rf dist pkg
-
-build : dist/claude-chat-interface
+build : clean dist/claude-chat-interface
 	rsync -r $(mDistList) dist/claude-chat-interface/
 
 package : build pkg
 	cd dist; zip -r ../pkg/claude-chat-interface.zip claude-chat-interface
+
+clean :
+	-find . -type f -name '*~' -exec rm {} \;
+	-rm -rf dist
+
+dist-clean : clean
+	-rm -rf dist pkg
 
 # ----------
 # Single Targets
