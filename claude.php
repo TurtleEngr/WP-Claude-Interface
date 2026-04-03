@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Claude 3.x Chat Interface
  * Description: Adds a Claude AI chat interface to your WordPress site using a shortcode.
- * Version: 1.2
+ * Version: 1.3
  * Author: Volkan Kücükbudak
  * Enhancements: TurtleEngr
  */
@@ -46,9 +46,9 @@ function claude_chat_enqueue_scripts() {
     wp_localize_script('claude-chat-script', 'claudeChat', array(
             'ajax_url'      => admin_url('admin-ajax.php'),
             'nonce'         => wp_create_nonce('claude-chat-nonce'),
-            // Pass addon prompt text so JS can append it when the user ticks the box.
-            // An empty string is sent when the feature is disabled, which is harmless.
-            'addon_prompt'  => get_option('claude_chat_addon_prompt_text', ''),
+            // FIX: Only expose a boolean flag — never the prompt text itself.
+            // The actual prompt text is appended server-side in claude_chat_ajax_handler().
+            'addon_enabled' => get_option('claude_chat_addon_prompt_enabled', '0') === '1',
         ));
 }
 add_action('wp_enqueue_scripts', 'claude_chat_enqueue_scripts');
@@ -78,10 +78,54 @@ function claude_chat_shortcode() {
 }
 add_shortcode('claude_chat', 'claude_chat_shortcode');
 
+// ---------------------------------------------------------------------------
+// FIX: Transient-based rate limiter — max 10 requests per minute per IP.
+// Returns true when the request is allowed, false when the limit is exceeded.
+// ---------------------------------------------------------------------------
+function claude_chat_check_rate_limit() {
+    $ip            = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
+    $transient_key = 'claude_chat_rate_' . md5($ip);
+    $count         = get_transient($transient_key);
+
+    if ($count === false) {
+        // First request in this window — start the counter with a 60-second TTL.
+        set_transient($transient_key, 1, 60);
+        return true;
+    }
+
+    if (intval($count) >= 10) {
+        return false; // Rate limit exceeded.
+    }
+
+    // Increment without resetting the existing TTL by reusing the same key.
+    set_transient($transient_key, intval($count) + 1, 60);
+    return true;
+}
+
 // AJAX handler for chat requests
 function claude_chat_ajax_handler() {
     check_ajax_referer('claude-chat-nonce', 'nonce');
-    $message = sanitize_text_field($_POST['message']);
+
+    // FIX: Enforce rate limit before doing any further work.
+    if ( ! claude_chat_check_rate_limit() ) {
+        wp_send_json_error('Rate limit exceeded. Please wait a moment before sending another message.');
+        return;
+    }
+
+    // FIX: Use sanitize_textarea_field so newlines in multi-line messages
+    // are preserved (sanitize_text_field strips them).
+    $message = sanitize_textarea_field($_POST['message']);
+
+    // FIX: The addon prompt text never travels to the browser.
+    // The JS sends only a boolean flag; we append the stored prompt server-side.
+    $addon_checked = ! empty($_POST['addon_enabled']) && $_POST['addon_enabled'] === '1';
+    if ($addon_checked && get_option('claude_chat_addon_prompt_enabled', '0') === '1') {
+        $addon_text = get_option('claude_chat_addon_prompt_text', '');
+        if ($addon_text !== '') {
+            $message = $message . "\n" . $addon_text;
+        }
+    }
+
     $response = claude_chat_api_request($message);
     if ($response) {
         wp_send_json_success($response);
@@ -98,61 +142,51 @@ function claude_chat_api_request($message) {
     $model         = get_option('claude_chat_model');
     $temperature   = get_option('claude_chat_temperature');
     $max_tokens    = get_option('claude_chat_max_tokens');
-    $prefix_prompt = get_option('claude_chat_prefix_prompt', '');
+    $prefix_prompt = trim(get_option('claude_chat_prefix_prompt', ''));
 
     // Use the correct API-Endpoint.
     $url = 'https://api.anthropic.com/v1/messages';
-
-    // -----------------------------------------------------------------------
-    // Build the messages array.
-    //
-    // When a prefix prompt is configured it is sent as the first content block
-    // of the user message with cache_control set to "ephemeral" so that
-    // Anthropic's prompt-caching feature can cache that block across requests.
-    // The user's actual question follows as a second content block without
-    // cache_control, ensuring only the stable prefix is cached.
-    //
-    // If no prefix prompt is set the message is sent as a plain string.
-    // -----------------------------------------------------------------------
-
-    $prefix_prompt = trim($prefix_prompt);
-
-    if ($prefix_prompt !== '') {
-        // Multi-block content with cached prefix
-        $content = array(
-            array(
-                'type'          => 'text',
-                'text'          => $prefix_prompt,
-                'cache_control' => array('type' => 'ephemeral'),
-            ),
-            array(
-                'type' => 'text',
-                'text' => $message,
-            ),
-        );
-    } else {
-        // Original single-string content
-        $content = $message;
-    }
 
     $headers = array(
         'Content-Type'      => 'application/json',
         'x-api-key'         => $api_key,
         'anthropic-version' => '2023-06-01',
-        // Required to enable the cache_control field on content blocks
+        // Required to enable cache_control on system/content blocks.
         'anthropic-beta'    => 'prompt-caching-2024-07-31',
     );
 
+    // -----------------------------------------------------------------------
+    // FIX: Move the prefix prompt to the dedicated `system` parameter.
+    //
+    // Placing it in `system` gives it architectural separation from the
+    // conversation turn — it cannot be overridden by "Ignore previous
+    // instructions…" style user inputs and benefits from Claude's distinct
+    // system-prompt handling.
+    //
+    // The array form is used (rather than a plain string) so that
+    // cache_control can be set on the block, preserving the prompt-caching
+    // benefit of the original implementation.
+    // -----------------------------------------------------------------------
     $body = array(
-        'model'       => $model,
-        'max_tokens'  => intval($max_tokens),
-        'messages'    => array(
+        'model'      => $model,
+        'max_tokens' => intval($max_tokens),
+        'messages'   => array(
             array(
                 'role'    => 'user',
-                'content' => $content,
+                'content' => $message,   // plain string — no prefix bundled in here
             ),
         ),
     );
+
+    if ($prefix_prompt !== '') {
+        $body['system'] = array(
+            array(
+                'type'          => 'text',
+                'text'          => $prefix_prompt,
+                'cache_control' => array('type' => 'ephemeral'),
+            ),
+        );
+    }
 
     // Only include temperature when set (0 is falsy but valid, so check !== '')
     if ($temperature !== '') {
@@ -174,21 +208,7 @@ function claude_chat_api_request($message) {
     $data = json_decode($body, true);
 
     if (isset($data['content'][0]['text'])) {
-        $reply = $data['content'][0]['text'];
-
-        // ------------------------------------------------------------------
-        // Strip the prefix prompt from the returned response.
-        //
-        // Claude will not normally echo the prefix back, but if it does (e.g.
-        // because the prefix instructed it to repeat instructions, or due to
-        // an unexpected model behavior) we remove it here so the end-user
-        // only ever sees the genuine answer.
-        // ------------------------------------------------------------------
-        if ($prefix_prompt !== '') {
-            $reply = claude_chat_strip_prefix($reply, $prefix_prompt);
-        }
-
-        return $reply;
+        return $data['content'][0]['text'];
 
     } elseif (isset($data['error'])) {
         claude_chat_log_error('API Error', print_r($data, true));
@@ -197,24 +217,6 @@ function claude_chat_api_request($message) {
         claude_chat_log_error('Unknown Error', 'Unable to get a response from Claude API. Response: ' . print_r($data, true));
         return 'Error: Unable to get a response from Claude API.';
     }
-}
-
-// ---------------------------------------------------------------------------
-// Helper: strip prefix from response text
-//
-// Removes the prefix prompt text from the very beginning of $response if it
-// appears there (case-insensitively, ignoring leading/trailing whitespace).
-// Also removes any leading whitespace that remains after stripping.
-// ---------------------------------------------------------------------------
-function claude_chat_strip_prefix($response, $prefix) {
-    $response_trimmed = ltrim($response);
-    $prefix_len       = strlen($prefix);
-
-    if (strncasecmp($response_trimmed, $prefix, $prefix_len) === 0) {
-        return ltrim(substr($response_trimmed, $prefix_len));
-    }
-
-    return $response;
 }
 
 // Logging function
@@ -264,7 +266,7 @@ function claude_chat_settings_init() {
     add_settings_field(
         'claude_chat_api_key',
         'API Key',
-        'claude_chat_text_field_callback',
+        'claude_chat_api_key_field_callback',   // FIX: dedicated callback uses type="password"
         'claude-chat-settings',
         'claude_chat_settings_section',
         array('label_for' => 'claude_chat_api_key')
@@ -316,7 +318,7 @@ function claude_chat_settings_init() {
         'claude_chat_settings_section',
         array(
             'label_for'   => 'claude_chat_prefix_prompt',
-            'description' => 'Optional. This text is prepended to every user message before it is sent to the Claude API. It is sent with <code>cache_control</code> (ephemeral) so the block is eligible for prompt caching, reducing latency and cost on repeated requests. Leave blank to disable.',
+            'description' => 'Optional. Sent as the <code>system</code> prompt on every request, keeping it architecturally separate from the conversation. Uses <code>cache_control</code> (ephemeral) for prompt-caching eligibility. Leave blank to disable.',
         )
     );
 
@@ -341,18 +343,18 @@ function claude_chat_settings_section_callback($args) {
     echo '<p>Enter your Claude API settings below:</p>';
 }
 
-
-function claude_chat_text_field_callback($args) {
+// FIX: Render the API key as a password field so it is masked in the browser.
+function claude_chat_api_key_field_callback($args) {
     $option = get_option($args['label_for']);
-    echo '<input type="text" id="'   . esc_attr($args['label_for'])
-        . '" name="'                  . esc_attr($args['label_for'])
-        . '" value="'                 . esc_attr($option)
-        . '" class="regular-text">';
+    echo '<input type="password" id="'  . esc_attr($args['label_for'])
+        . '" name="'                     . esc_attr($args['label_for'])
+        . '" value="'                    . esc_attr($option)
+        . '" class="regular-text"'
+        . ' autocomplete="new-password">';
     if ( ! empty($args['description'])) {
        echo '<p class="description">' . wp_kses($args['description'], array('code' => array())) . '</p>';
     }
 }
-
 
 function claude_chat_number_field_callback($args) {
     $option = get_option($args['label_for']);
@@ -445,6 +447,8 @@ function claude_chat_addon_prompt_callback() {
     echo '<p class="description">'
         . 'When <strong>Enable</strong> is checked, a checkbox labelled with the text above '
         . 'is shown in the user chat form (before the message input). '
-        . 'If the user ticks that checkbox, the prompt text in this textarea is appended to their message.'
+        . 'If the user ticks that checkbox, a boolean flag is sent to the server and '
+        . 'the prompt text is appended to their message <strong>server-side</strong> — '
+        . 'the prompt text is never exposed to the browser.'
         . '</p>';
 }

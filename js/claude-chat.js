@@ -1,33 +1,44 @@
 jQuery(document).ready(function($) {
     $('#claude-chat-submit').on('click', function() {
-        var message = $('#claude-chat-input').val();
-        if (message.trim() === '') {
+        var userInput = $('#claude-chat-input').val();
+        if (userInput.trim() === '') {
             console.log('Empty message, nothing sent.');
             return;
         }
 
-        // If the addon checkbox is present and checked, append the extra prompt.
+        // FIX: The addon prompt text no longer lives in claudeChat.
+        // Send only a boolean flag so the server can append the prompt server-side.
+        var addonEnabled = false;
         var $addonCheckbox = $('#claude-chat-addon-checkbox');
-        if ($addonCheckbox.length && $addonCheckbox.is(':checked') && claudeChat.addon_prompt) {
-            message = message + '\n' + claudeChat.addon_prompt;
+        if ($addonCheckbox.length && $addonCheckbox.is(':checked') && claudeChat.addon_enabled) {
+            addonEnabled = true;
         }
 
-        console.log('Message sent:', message);
-        $('#claude-chat-messages').append('<div class="user-message">' + $('#claude-chat-input').val() + '</div>');
+        console.log('Message sent.');
+
+        // FIX: Use .text() to set the user message so any HTML special
+        // characters in the input are treated as plain text, preventing XSS.
+        var $userMsg = $('<div class="user-message"></div>').text(userInput);
+        $('#claude-chat-messages').append($userMsg);
         $('#claude-chat-input').val('');
 
         $.ajax({
             url: claudeChat.ajax_url,
             type: 'POST',
             data: {
-                action: 'claude_chat',
-                nonce: claudeChat.nonce,
-                message: message
+                action:       'claude_chat',
+                nonce:        claudeChat.nonce,
+                message:      userInput,
+                // FIX: boolean flag only — prompt text stays on the server.
+                addon_enabled: addonEnabled ? '1' : '0',
             },
             success: function(response) {
                 console.log('AJAX-Success:', response);
                 if (response.success) {
-                    $('#claude-chat-messages').append('<div class="claude-message">' + response.data + '</div>');
+                    // FIX: Use .text() so Claude's response cannot inject
+                    // arbitrary HTML/script into the page.
+                    var $claudeMsg = $('<div class="claude-message"></div>').text(response.data);
+                    $('#claude-chat-messages').append($claudeMsg);
                 } else {
                     console.log('Response error:', response);
                     $('#claude-chat-messages').append('<div class="error-message">Error: Unable to get a response</div>');
