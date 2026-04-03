@@ -1,3 +1,4 @@
 *~
 .phptidy-cache
 dist/
+pkg/
