@@ -1,6 +1,8 @@
 # ----------
 # Macros
 
+mVer = 1.3
+
 mDistList = \
 	css \
 	js \
@@ -24,7 +26,7 @@ build : clean dist/claude-chat-interface
 	rsync -r $(mDistList) dist/claude-chat-interface/
 
 package : build pkg
-	cd dist; zip -r ../pkg/claude-chat-interface.zip claude-chat-interface
+	cd dist; zip -r ../pkg/claude-chat-interface-$(mVer).zip claude-chat-interface
 
 clean :
 	-find . -type f -name '*~' -exec rm {} \;
