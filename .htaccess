@@ -1,4 +1,5 @@
 <Files "claude-chat-error.log">
-     Order Allow,Deny
-     Deny from all
+  # Deny web access to claude-chat-error.log
+  Order Allow,Deny
+  Deny from all
 </Files>
