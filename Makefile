@@ -1,7 +1,7 @@
 # ----------
 # Macros
 
-mVer = 1.3
+mVer = 1.4
 
 mDistList = \
 	css \

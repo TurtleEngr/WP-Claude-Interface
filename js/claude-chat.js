@@ -35,9 +35,7 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 console.log('AJAX-Success:', response);
                 if (response.success) {
-                    // FIX: Use .text() so Claude's response cannot inject
-                    // arbitrary HTML/script into the page.
-                    var $claudeMsg = $('<div class="claude-message"></div>').text(response.data);
+                    var $claudeMsg = $('<div class="claude-message"></div>').html(response.data);
                     $('#claude-chat-messages').append($claudeMsg);
                 } else {
                     console.log('Response error:', response);
