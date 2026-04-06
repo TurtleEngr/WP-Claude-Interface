@@ -367,6 +367,7 @@ add_action('admin_menu', 'claude_chat_settings_page');
 
 /* Settings page HTML */
 function claude_chat_settings_page_html() {
+    $homeUrl = home_url();
 ?>
     <div class="wrap">
         <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
@@ -389,12 +390,13 @@ function claude_chat_settings_page_html() {
               style="margin-top:12px;">
             <input type="hidden" name="action" value="claude_chat_clear_logs">
             <?php wp_nonce_field('claude_chat_clear_logs_action', 'claude_chat_clear_logs_nonce'); ?>
-            <?php submit_button('Clear Logs', 'delete', 'claude_chat_clear_logs_submit', false); ?>
-            <p>Before clearing the logs, they can be viewed at:<br>
-            <a href="https://indivisiblepv.info/wp-content/uploads/claude/claude_log.org" target="_blank">
-            https://indivisiblepv.info/wp-content/uploads/claude/claude_log.org</a><br>
-            <a href="https://indivisiblepv.info/wp-content/uploads/claude/claude.log" target="_blank">
-            https://indivisiblepv.info/wp-content/uploads/claude/claude.log</a></p>
+            <?php submit_button('Clear Logs', 'delete', 'claude_chat_clear_logs_submit', false);
+            echo '<p>Before clearing the logs, they can be viewed at:<br>';
+            echo '<a href="' . home_url('/wp-content/uploads/claude/claude_log.org') . '" target="_blank">';
+            echo home_url('/wp-content/uploads/claude/claude_log.org') . '</a><br>';
+            echo '<a href="' . home_url('/wp-content/uploads/claude/claude.log') . '" target="_blank">';
+            echo home_url('/wp-content/uploads/claude/claude.log') . '</a></p>';
+            ?>
         </form>
     </div>
     <?php
