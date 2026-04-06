@@ -1,5 +1,0 @@
-<Files "claude-chat-error.log">
-  # Deny web access to claude-chat-error.log
-  Order Allow,Deny
-  Deny from all
-</Files>
