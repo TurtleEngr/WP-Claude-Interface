@@ -3,8 +3,7 @@
  * Plugin Name: Claude 3.x Chat Interface
  * Description: Adds a Claude AI chat interface to your WordPress site using a shortcode.
  * Version: mVerStr
- * Author: Volkan Kücükbudak
- * Enhancements: TurtleEngr
+ * Author: Volkan Kücükbudak, enh: TurtleEngr
  */
 
 
@@ -342,6 +341,7 @@ function claude_chat_clear_logs() {
         if ( $path && file_exists($path) ) {
             wp_delete_file($path);
         }
+        error_log( "* Log\n", 3, $path );
     }
 
     wp_redirect( add_query_arg(
@@ -390,6 +390,11 @@ function claude_chat_settings_page_html() {
             <input type="hidden" name="action" value="claude_chat_clear_logs">
             <?php wp_nonce_field('claude_chat_clear_logs_action', 'claude_chat_clear_logs_nonce'); ?>
             <?php submit_button('Clear Logs', 'delete', 'claude_chat_clear_logs_submit', false); ?>
+            <p>Before clearing the logs, they can be viewed at:<br>
+            <a href="https://indivisiblepv.info/wp-content/uploads/claude/claude_log.org" target="_blank">
+            https://indivisiblepv.info/wp-content/uploads/claude/claude_log.org</a><br>
+            <a href="https://indivisiblepv.info/wp-content/uploads/claude/claude.log" target="_blank">
+            https://indivisiblepv.info/wp-content/uploads/claude/claude.log</a></p>
         </form>
     </div>
     <?php
