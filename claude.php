@@ -245,7 +245,7 @@ function claude_chat_api_request($message) {
     $prefix_prompt = trim(get_option('claude_chat_prefix_prompt', ''));
 
     /* Use the correct API-Endpoint. */
-    $url = 'https:/*api.anthropic.com/v1/messages'; */
+    $url = 'https://api.anthropic.com/v1/messages';
 
         $headers = array(
         'Content-Type'      => 'application/json',
