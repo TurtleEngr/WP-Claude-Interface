@@ -142,12 +142,32 @@ is needed.
 ### Screenshots
 #### Public View
 ![Claude 3 WordPress Plugin](claude3.png)
+
+
 #### Settings
 ![Claude 3 WordPress Pöugin](claude_set.png)
 
+API Key - Put your Claude API key here
+
+Model - Pick the model you want
+
+Temperature - Range: 0 to 1
+
+Max Tokens - Range: 1 to 8096
+
+Prefix Prompt - Optional. Sent as the system prompt on every request,
+keeping it separate from user input. Uses cache_control to save
+costs. Leave blank to disable.
+
+Additional Prompt - When Enable is checked,the checkbox label will be
+shown in the user chat form (before the message input). If the user
+ticks that checkbox, the Additional Prompt will be
+appended to the Prompt Prefix.
+
 ## Support
 
-For support, feature requests, or to report issues, please open an issue on the GitHub repository.
+For support, feature requests, or to report issues, please open an
+issue on the GitHub repository.
 
 ## License
 

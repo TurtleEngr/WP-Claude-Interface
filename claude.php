@@ -465,7 +465,7 @@ function claude_chat_settings_init() {
         'claude_chat_settings_section',
         array(
             'label_for'   => 'claude_chat_prefix_prompt',
-            'description' => 'Optional. Sent as the <code>system</code> prompt on every request, keeping it architecturally separate from the conversation. Uses <code>cache_control</code> (ephemeral) for prompt-caching eligibility. Leave blank to disable.',
+            'description' => 'Optional. Sent as the system prompt on every request, keeping it separate from user input. Uses cache_control to save costs. Leave blank to disable.',
         )
     );
 
@@ -592,11 +592,9 @@ function claude_chat_addon_prompt_callback() {
         . esc_textarea($text)
         . '</textarea>';
 
-    echo '<p class="description">'
-        . 'When <strong>Enable</strong> is checked, a checkbox labelled with the text above '
-        . 'is shown in the user chat form (before the message input). '
-        . 'If the user ticks that checkbox, a boolean flag is sent to the server and '
-        . 'the prompt text is appended to their message <strong>server-side</strong> — '
-        . 'the prompt text is never exposed to the browser.'
-        . '</p>';
+    echo '<p class="description">' .
+        'When <strong>Enable</strong> is checked, the checkbox label' .
+        'will be shown in the user chat form (before the message' .
+        'input). If the user ticks that checkbox, the Additional Prompt' .
+        'will be appended to the Prompt Prefix.</p>';
 }
