@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Claude 3.x Chat Interface
- * Plugin URI: https://github.com/TurtleEngr/WP-Claude-Interface
+ * Plugin URI: https://github.com/TurtleEngr/WP-Claude-Interface/tree/main
  * Description: Adds a Claude AI chat interface to your WordPress site using a shortcode.
  * Version: mVerStr
  * Author: Volkan Kücükbudak, enh: TurtleEngr
