@@ -41,10 +41,10 @@ dist/claude-chat-interface pkg :
 	-mkdir -p $@
 
 dist/claude-chat-interface/css : css
-	rsync -r $? $@
+	rsync -r $? dist/claude-chat-interface/
 
 dist/claude-chat-interface/js : js
-	rsync -r $? $@
+	rsync -r $? dist/claude-chat-interface/
 
 dist/claude-chat-interface/claude.php : claude.php
 	sed 's/mVerStr/$(mVerStr)/' <$? >$@

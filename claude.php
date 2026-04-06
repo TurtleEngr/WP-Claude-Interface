@@ -200,7 +200,8 @@ function claude_chat_log_message( $message, $response ) {
         return; /* Could not resolve / create the directory — fail silently. */
     }
 
-    $timestamp = date( 'Y-m-d H:i' );
+    $date = new DateTime('now', new DateTimeZone('America/Los_Angeles'));
+    $timestamp = $date->format('Y-m-d H:i:s T');
 
     $entry  = "** {$timestamp} message\n";
     $entry .= $message . "\n";
@@ -325,11 +326,11 @@ function claude_chat_api_request($message) {
 }
 
 
-/* -----------------------------------------------------------------------
+/* 
    Clear Logs handler
    Deletes claude_log.org and claude.log, then redirects back to the
    settings page with a confirmation flag.
-   ----------------------------------------------------------------------- */
+*/
 function claude_chat_clear_logs() {
     if ( ! current_user_can('manage_options') ) {
         wp_die( esc_html__('Unauthorized', 'claude-chat') );
@@ -497,7 +498,6 @@ function claude_chat_api_key_field_callback($args) {
         echo '<p class="description">' . wp_kses($args['description'], array('code' => array())) . '</p>';
     }
 }
-
 
 function claude_chat_number_field_callback($args) {
     $option = get_option($args['label_for']);
