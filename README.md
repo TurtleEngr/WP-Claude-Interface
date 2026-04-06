@@ -164,6 +164,13 @@ shown in the user chat form (before the message input). If the user
 ticks that checkbox, the Additional Prompt will be
 appended to the Prompt Prefix.
 
+Save Settings - Save any changes.
+
+Clear Logs - This button will clear the user and error logs.
+Before clearing the logs, they can be viewed at:
+https://WP-HOME/wp-content/uploads/claude/claude_log.org
+https://WP-HOME/wp-content/uploads/claude/claude.log
+
 ## Support
 
 For support, feature requests, or to report issues, please open an
