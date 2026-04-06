@@ -325,6 +325,33 @@ function claude_chat_api_request($message) {
 }
 
 
+/* -----------------------------------------------------------------------
+   Clear Logs handler
+   Deletes claude_log.org and claude.log, then redirects back to the
+   settings page with a confirmation flag.
+   ----------------------------------------------------------------------- */
+function claude_chat_clear_logs() {
+    if ( ! current_user_can('manage_options') ) {
+        wp_die( esc_html__('Unauthorized', 'claude-chat') );
+    }
+    check_admin_referer('claude_chat_clear_logs_action', 'claude_chat_clear_logs_nonce');
+
+    foreach ( array('claude_log.org', 'claude.log') as $log_file ) {
+        $path = claude_chat_get_log_path('claude', $log_file);
+        if ( $path && file_exists($path) ) {
+            wp_delete_file($path);
+        }
+    }
+
+    wp_redirect( add_query_arg(
+        array('page' => 'claude-chat-settings', 'logs-cleared' => '1'),
+        admin_url('options-general.php')
+    ) );
+    exit;
+}
+add_action('admin_post_claude_chat_clear_logs', 'claude_chat_clear_logs');
+
+
 /* Add settings page */
 function claude_chat_settings_page() {
     add_options_page(
@@ -342,12 +369,26 @@ function claude_chat_settings_page_html() {
 ?>
     <div class="wrap">
         <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+
+        <?php if ( isset($_GET['logs-cleared']) && $_GET['logs-cleared'] === '1' ) : ?>
+        <div class="notice notice-success is-dismissible">
+            <p><?php esc_html_e('Log files cleared successfully.', 'claude-chat'); ?></p>
+        </div>
+        <?php endif; ?>
+
         <form action="options.php" method="post">
             <?php
     settings_fields('claude_chat_options');
     do_settings_sections('claude-chat-settings');
     submit_button('Save Settings');
 ?>
+        </form>
+
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>"
+              style="margin-top:12px;">
+            <input type="hidden" name="action" value="claude_chat_clear_logs">
+            <?php wp_nonce_field('claude_chat_clear_logs_action', 'claude_chat_clear_logs_nonce'); ?>
+            <?php submit_button('Clear Logs', 'delete', 'claude_chat_clear_logs_submit', false); ?>
         </form>
     </div>
     <?php
