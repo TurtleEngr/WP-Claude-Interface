@@ -589,16 +589,16 @@ function claude_chat_addon_prompt_callback() {
 
     /* ---- Prompt textarea ---- */
     echo '<br><br>';
-    echo '<textarea'
-        . ' id="claude_chat_addon_prompt_text"'
-        . ' name="claude_chat_addon_prompt_text"'
-        . ' rows="4" cols="60" class="large-text code">'
-        . esc_textarea($text)
-        . '</textarea>';
+    echo '<textarea' .
+        ' id="claude_chat_addon_prompt_text"' .
+        ' name="claude_chat_addon_prompt_text"' .
+        ' rows="4" cols="60" class="large-text code">' .
+        esc_textarea($text) .
+        '</textarea>';
 
     echo '<p class="description">' .
         'When <strong>Enable</strong> is checked, the checkbox label' .
-        'will be shown in the user chat form (before the message' .
-        'input). If the user ticks that checkbox, the Additional Prompt' .
-        'will be appended to the Prompt Prefix.</p>';
+        ' will be shown in the user chat form (before the message' .
+        ' input). If the user ticks that checkbox, the Additional Prompt' .
+        ' will be appended to the Prompt Prefix.</p>';
 }
