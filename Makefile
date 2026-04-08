@@ -1,7 +1,9 @@
 # ----------
 # Macros
 
-mVerStr = 1.5
+SHELL := /bin/bash
+
+mVerStr = 1.6
 
 mDistList = \
 	dist/claude-chat-interface/css \
@@ -22,7 +24,7 @@ usage :
 	@echo dist-clean - clean and remove tmp dirs
 
 build : clean dist/claude-chat-interface $(mDistList)
-	sed -i 's/version-[0-9]\.[0-9]*-orange/version-$(mVerStr)-orange/' README.md
+	sed -E -i 's;version-[0-9]+(\.[0-9]+){1,3}-orange;version-$(mVerStr)-orange;' README.md
 
 package : build pkg
 	cd dist; zip -r ../pkg/claude-chat-interface-$(mVerStr).zip claude-chat-interface

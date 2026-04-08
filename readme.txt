@@ -38,6 +38,9 @@ You need to register with Claude AI to obtain your API key.
 
 == Changelog ==
 
+= 1.6 =
+* Scroll the output up so it is visible.
+
 = 1.5 =
 * Log user questions and responses
 

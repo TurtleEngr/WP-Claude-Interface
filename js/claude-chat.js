@@ -16,10 +16,14 @@ jQuery(document).ready(function($) {
 
         console.log('Message sent.');
 
+        var $messages = $('#claude-chat-messages');
+
         // FIX: Use .text() to set the user message so any HTML special
         // characters in the input are treated as plain text, preventing XSS.
         var $userMsg = $('<div class="user-message"></div>').text(userInput);
-        $('#claude-chat-messages').append($userMsg);
+        $messages.append($userMsg);
+        // Scroll down so the just-added user message is visible.
+        $messages.scrollTop($messages[0].scrollHeight);
         $('#claude-chat-input').val('');
 
         $.ajax({
@@ -36,17 +40,21 @@ jQuery(document).ready(function($) {
                 console.log('AJAX-Success:', response);
                 if (response.success) {
                     var $claudeMsg = $('<div class="claude-message"></div>').html(response.data);
-                    $('#claude-chat-messages').append($claudeMsg);
+                    $messages.append($claudeMsg);
+                    // Scroll to the user's message position, then up 10 lines.
+                    var lineHeight = parseFloat($messages.css('line-height')) || 24;
+                    var userMsgTop = $userMsg[0].offsetTop;
+                    $messages.scrollTop(userMsgTop - lineHeight * 10);
                 } else {
                     console.log('Response error:', response);
-                    $('#claude-chat-messages').append('<div class="error-message">Error: Unable to get a response</div>');
+                    $messages.append('<div class="error-message">Error: Unable to get a response</div>');
                 }
             },
             error: function(xhr, status, error) {
                 console.log('AJAX-Error:', error);
                 console.log('AJAX-Status:', status);
                 console.log('AJAX-XHR:', xhr);
-                $('#claude-chat-messages').append('<div class="error-message">Error: Unable to send message</div>');
+                $messages.append('<div class="error-message">Error: Unable to send message</div>');
             }
         });
     });
