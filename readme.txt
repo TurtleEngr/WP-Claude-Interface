@@ -1,12 +1,12 @@
 
 === Claude Chat Interface ===
-Contributors: aicodecraft
+Contributors: aicodecraft, turtle-engr
 Donate link: https://aicodecraft.io/donate
 Tags: chat, AI, Claude, WordPress
 Requires at least: 5.0
-Tested up to: 6.9.3
+Tested up to: 6.9.4
 Stable tag: mVerStr
-License: GPL2
+License: DBAD
 License URI: https://dbad-license.org/
 
 Claude Chat Interface integrates the Claude AI chat interface into your WordPress site using a shortcode.
@@ -37,6 +37,16 @@ You need to register with Claude AI to obtain your API key.
 2. Chat interface displayed on a WordPress page.
 
 == Changelog ==
+
+= 1.7 =
+* Removed the Additional Prompt feature. It did not work well and it
+  clutters the code.
+
+* Added memory limit protections. When the 'Hostinger Easy Onboarding'
+  plugin is active with 'NextGEN Gallery' plugin, an out-of-memory
+  error is thrown when saving in Claude Settings form.  'Hostinger
+  Easy Onboarding' is now disabled and I'll consider replacing
+  NextGen.
 
 = 1.6 =
 * Scroll the output up so it is visible.

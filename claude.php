@@ -18,60 +18,86 @@ define('CLAUDE_MODELS', [
         'claude-sonnet-4-5-20250929'   => 'Claude 4.5 Sonnet',
     ]);
 
+/*
+  FIX (memory): Tunable limits to protect against pathological inputs and
+  responses. Raising these should only be necessary if a legitimate use case
+  is being clipped — in which case something is probably also wrong.
+*/
+/* Max body size (bytes) we will read from the Claude API. Well above any
+   legitimate response; an overage means something is wrong and we should
+   fail fast rather than consume all available PHP memory inside
+   wp-includes/Requests/src/Requests.php during response parsing. */
+define('CLAUDE_CHAT_MAX_RESPONSE_BYTES', 4 * 1024 * 1024); /* 4 MB */
+
+/* Max characters dumped into claude.log when an API error occurs. The raw
+   response body is *not* a useful debugging aid past the first few KB, and
+   we don't want a single bad response to fill the disk or hold a huge
+   string in memory. */
+define('CLAUDE_CHAT_MAX_LOG_DUMP_CHARS', 4096);
+
+/* Max length (bytes) of the Prefix Prompt stored as an option. 64 KB is
+   roughly 10,000 words — more than a page. Anything larger almost
+   certainly means a mispaste. */
+define('CLAUDE_CHAT_MAX_PREFIX_PROMPT_BYTES', 65536);
+
 /* Register settings */
 function claude_chat_register_settings() {
     register_setting('claude_chat_options', 'claude_chat_api_key');
     register_setting('claude_chat_options', 'claude_chat_model');
     register_setting('claude_chat_options', 'claude_chat_temperature');
     register_setting('claude_chat_options', 'claude_chat_max_tokens');
+    /* FIX (memory): custom sanitize callback enforces a length cap so a
+       pathologically large paste cannot be written to wp_options. */
     register_setting('claude_chat_options', 'claude_chat_prefix_prompt', [
-            'sanitize_callback' => 'sanitize_textarea_field',
-        ]);
-
-    /* Additional prompt settings */
-    register_setting('claude_chat_options', 'claude_chat_addon_prompt_enabled');
-    register_setting('claude_chat_options', 'claude_chat_addon_prompt_label', [
-            'sanitize_callback' => 'sanitize_text_field',
-        ]);
-    register_setting('claude_chat_options', 'claude_chat_addon_prompt_text', [
-            'sanitize_callback' => 'sanitize_textarea_field',
+            'sanitize_callback' => 'claude_chat_sanitize_prefix_prompt',
         ]);
 }
 add_action('admin_init', 'claude_chat_register_settings');
+
+/*
+  FIX (memory): Sanitize callback for the Prefix Prompt.
+  Runs sanitize_textarea_field first, then clamps the length to
+  CLAUDE_CHAT_MAX_PREFIX_PROMPT_BYTES. If truncation occurs, a
+  settings-error notice is registered so the user sees what happened
+  on the settings screen.
+*/
+function claude_chat_sanitize_prefix_prompt( $value ) {
+    $value = sanitize_textarea_field( $value );
+    $len   = strlen( $value );
+    if ( $len > CLAUDE_CHAT_MAX_PREFIX_PROMPT_BYTES ) {
+        $value = substr( $value, 0, CLAUDE_CHAT_MAX_PREFIX_PROMPT_BYTES );
+        add_settings_error(
+            'claude_chat_prefix_prompt',
+            'claude_chat_prefix_prompt_truncated',
+            sprintf(
+                /* translators: 1: submitted size, 2: allowed size */
+                esc_html__( 'Prefix Prompt was %1$d bytes; truncated to the %2$d-byte limit.', 'claude-chat' ),
+                $len,
+                CLAUDE_CHAT_MAX_PREFIX_PROMPT_BYTES
+            ),
+            'warning'
+        );
+    }
+    return $value;
+}
 
 /* Enqueue necessary scripts and styles */
 function claude_chat_enqueue_scripts() {
     wp_enqueue_style('claude-chat-style', plugin_dir_url(__FILE__) . 'css/claude-chat.css');
     wp_enqueue_script('claude-chat-script', plugin_dir_url(__FILE__) . 'js/claude-chat.js', array('jquery'), 'mVerStr', true);
     wp_localize_script('claude-chat-script', 'claudeChat', array(
-            'ajax_url'      => admin_url('admin-ajax.php'),
-            'nonce'         => wp_create_nonce('claude-chat-nonce'),
-            /* FIX: Only expose a boolean flag — never the prompt text itself.
-               The actual prompt text is appended server-side in
-               claude_chat_ajax_handler().
-            */
-            'addon_enabled' => get_option('claude_chat_addon_prompt_enabled', '0') === '1',
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce'    => wp_create_nonce('claude-chat-nonce'),
         ));
 }
 add_action('wp_enqueue_scripts', 'claude_chat_enqueue_scripts');
 
 /* Shortcode to display the chat interface */
 function claude_chat_shortcode() {
-    $addon_enabled = get_option('claude_chat_addon_prompt_enabled', '0');
-    $addon_label   = get_option('claude_chat_addon_prompt_label', '');
-
     ob_start();
 ?>
     <div id="claude-chat-interface">
         <div id="claude-chat-messages"></div>
-        <?php if ( $addon_enabled === '1' ) : ?>
-        <div id="claude-chat-addon">
-            <label>
-                <input type="checkbox" id="claude-chat-addon-checkbox">
-                <?php echo esc_html( $addon_label ); ?>
-            </label>
-        </div>
-        <?php endif; ?>
         <textarea id="claude-chat-input" placeholder="Ask Claude something..." rows="3"></textarea>
         <button id="claude-chat-submit">Send</button>
     </div>
@@ -120,18 +146,6 @@ function claude_chat_ajax_handler() {
        are preserved (sanitize_text_field strips them). */
     $message = sanitize_textarea_field($_POST['message']);
 
-    /* FIX: The addon prompt text never travels to the browser.
-       The JS sends only a boolean flag; we append the stored prompt
-       server-side.
-    */
-    $addon_checked = ! empty($_POST['addon_enabled']) && $_POST['addon_enabled'] === '1';
-    if ($addon_checked && get_option('claude_chat_addon_prompt_enabled', '0') === '1') {
-        $addon_text = get_option('claude_chat_addon_prompt_text', '');
-        if ($addon_text !== '') {
-            $message = $message . "\n" . $addon_text;
-        }
-    }
-
     $response = claude_chat_api_request($message);
     if ($response) {
         wp_send_json_success($response);
@@ -176,6 +190,33 @@ function claude_chat_get_log_path( $log_subdir = 'claude', $log_file = '' ) {
     }
 
     return $log_file !== '' ? trailingslashit( $dir ) . $log_file : $dir;
+}
+
+
+/**
+ * FIX (memory): Truncate a value for safe inclusion in an error log.
+ *
+ * Non-strings are first rendered with print_r(); the result is then
+ * clamped to $max_chars characters with a trailing marker noting the
+ * original length. This prevents a large API error payload — e.g. an
+ * HTML error page from a misrouted request — from being held in PHP
+ * memory and then appended to claude.log in full.
+ *
+ * @param mixed $value     The value to render.
+ * @param int   $max_chars Maximum characters in the returned string.
+ * @return string          Safe-to-log string, never longer than
+ *                         $max_chars + a short truncation marker.
+ */
+function claude_chat_truncate_for_log( $value, $max_chars = CLAUDE_CHAT_MAX_LOG_DUMP_CHARS ) {
+    if ( ! is_string( $value ) ) {
+        $value = print_r( $value, true );
+    }
+    $len = strlen( $value );
+    if ( $len > $max_chars ) {
+        $value = substr( $value, 0, $max_chars )
+               . "\n... [truncated, {$len} bytes total]";
+    }
+    return $value;
 }
 
 
@@ -294,10 +335,28 @@ function claude_chat_api_request($message) {
         $body['temperature'] = floatval($temperature);
     }
 
+    /*
+      FIX (memory): Cap the response body WordPress will read.
+
+      Without `limit_response_size`, an unexpectedly large response —
+      e.g. an upstream proxy returning HTML, a malformed stream, or a
+      misrouted request — is read in full and then passed through
+      wp-includes/Requests/src/Requests.php::parse_response(), which
+      splits it with repeated substr() calls. Each substr roughly
+      doubles the string's memory footprint during parsing, so a
+      response of tens of MB can exhaust even a 1.5 GB memory_limit
+      and crash unrelated admin requests when another plugin later
+      triggers the same code path.
+
+      With the cap set, an oversized response aborts cleanly inside
+      the transport and is surfaced here as a WP_Error, which the
+      existing is_wp_error() branch already handles.
+    */
     $response = wp_remote_post($url, array(
-            'headers' => $headers,
-            'body'    => json_encode($body),
-            'timeout' => 60,
+            'headers'             => $headers,
+            'body'                => json_encode($body),
+            'timeout'             => 60,
+            'limit_response_size' => CLAUDE_CHAT_MAX_RESPONSE_BYTES,
         ));
 
     if (is_wp_error($response)) {
@@ -317,10 +376,17 @@ function claude_chat_api_request($message) {
         return $response_text;
 
     } elseif (isset($data['error'])) {
-        claude_chat_log_error('API Error', print_r($data, true));
+        /* FIX (memory): truncate the dumped payload so a huge error
+           body cannot balloon the log file or PHP memory. */
+        claude_chat_log_error('API Error', claude_chat_truncate_for_log($data));
         return 'API Error: ' . $data['error']['message'];
     } else {
-        claude_chat_log_error('Unknown Error', 'Unable to get a response from Claude API. Response: ' . print_r($data, true));
+        /* FIX (memory): same truncation rationale as above. */
+        claude_chat_log_error(
+            'Unknown Error',
+            'Unable to get a response from Claude API. Response: '
+                . claude_chat_truncate_for_log($data)
+        );
         return 'Error: Unable to get a response from Claude API.';
     }
 }
@@ -468,22 +534,8 @@ function claude_chat_settings_init() {
         'claude_chat_settings_section',
         array(
             'label_for'   => 'claude_chat_prefix_prompt',
-            'description' => 'Optional. Sent as the system prompt on every request, keeping it separate from user input. Uses cache_control to save costs. Leave blank to disable.',
+            'description' => 'Optional. Sent as the system prompt on every request, keeping it separate from user input. Uses cache_control to save costs. Leave blank to disable. Max ' . number_format( CLAUDE_CHAT_MAX_PREFIX_PROMPT_BYTES ) . ' bytes.',
         )
-    );
-
-    /*
-      Additional prompt field — a single settings row that groups together:
-      1. An enable/disable checkbox
-      2. A text input for the checkbox label shown in the user form
-      3. A textarea for the prompt text that gets appended to the message
-    */
-    add_settings_field(
-        'claude_chat_addon_prompt',
-        'Additional Prompt',
-        'claude_chat_addon_prompt_callback',
-        'claude-chat-settings',
-        'claude_chat_settings_section'
     );
 }
 add_action('admin_init', 'claude_chat_settings_init');
@@ -551,54 +603,4 @@ function claude_chat_textarea_field_callback($args) {
     if ( ! empty($args['description'])) {
         echo '<p class="description">' . wp_kses($args['description'], array('code' => array())) . '</p>';
     }
-}
-
-
-/*
-  Callback for the "Additional Prompt" settings row.
-
-  Renders three controls in one table row:
-    Row 1 — Enable checkbox + label text input (inline)
-    Row 2 — Prompt textarea
-*/
-function claude_chat_addon_prompt_callback() {
-    $enabled = get_option('claude_chat_addon_prompt_enabled', '0');
-    $label   = get_option('claude_chat_addon_prompt_label', '');
-    $text    = get_option('claude_chat_addon_prompt_text', '');
-
-    /* ---- Enable checkbox + label input (same line) ---- */
-    echo '<label style="display:inline-flex; align-items:center; gap:6px;">';
-    echo '<input type="checkbox"'
-        . ' id="claude_chat_addon_prompt_enabled"'
-        . ' name="claude_chat_addon_prompt_enabled"'
-        . ' value="1"'
-        . checked('1', $enabled, false)
-        . '>';
-    echo '<strong>Enable</strong>';
-    echo '</label>';
-
-    echo '&nbsp;&nbsp;';
-
-    echo '<label for="claude_chat_addon_prompt_label" style="font-weight:normal;">Checkbox label:&nbsp;</label>';
-    echo '<input type="text"'
-        . ' id="claude_chat_addon_prompt_label"'
-        . ' name="claude_chat_addon_prompt_label"'
-        . ' value="' . esc_attr($label) . '"'
-        . ' class="regular-text"'
-        . ' placeholder="e.g. Include extra context">';
-
-    /* ---- Prompt textarea ---- */
-    echo '<br><br>';
-    echo '<textarea' .
-        ' id="claude_chat_addon_prompt_text"' .
-        ' name="claude_chat_addon_prompt_text"' .
-        ' rows="4" cols="60" class="large-text code">' .
-        esc_textarea($text) .
-        '</textarea>';
-
-    echo '<p class="description">' .
-        'When <strong>Enable</strong> is checked, the checkbox label' .
-        ' will be shown in the user chat form (before the message' .
-        ' input). If the user ticks that checkbox, the Additional Prompt' .
-        ' will be appended to the Prompt Prefix.</p>';
 }
