@@ -17,11 +17,11 @@ mDistList = \
 # Main Targets
 
 usage :
-	@echo Usage
-	@echo build - build dist/ with dirs and files to be installed
-	@echo package - create plugin install zip file
-	@echo clean - rm tmp files
-	@echo dist-clean - clean and remove tmp dirs
+	@echo "Usage:"
+	@echo "build - build dist/ with dirs and files to be installed"
+	@echo "package - create plugin install zip file"
+	@echo "clean - rm tmp files"
+	@echo "dist-clean - clean and remove tmp dirs"
 
 build : clean dist/claude-chat-interface $(mDistList)
 	sed -E -i 's;version-[0-9]+(\.[0-9]+){1,3}-orange;version-$(mVerStr)-orange;' README.md
