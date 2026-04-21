@@ -27,15 +27,6 @@ function claude_chat_register_settings() {
     register_setting('claude_chat_options', 'claude_chat_prefix_prompt', [
             'sanitize_callback' => 'sanitize_textarea_field',
         ]);
-
-    /* Additional prompt settings */
-    register_setting('claude_chat_options', 'claude_chat_addon_prompt_enabled');
-    register_setting('claude_chat_options', 'claude_chat_addon_prompt_label', [
-            'sanitize_callback' => 'sanitize_text_field',
-        ]);
-    register_setting('claude_chat_options', 'claude_chat_addon_prompt_text', [
-            'sanitize_callback' => 'sanitize_textarea_field',
-        ]);
 }
 add_action('admin_init', 'claude_chat_register_settings');
 
@@ -44,34 +35,18 @@ function claude_chat_enqueue_scripts() {
     wp_enqueue_style('claude-chat-style', plugin_dir_url(__FILE__) . 'css/claude-chat.css');
     wp_enqueue_script('claude-chat-script', plugin_dir_url(__FILE__) . 'js/claude-chat.js', array('jquery'), 'mVerStr', true);
     wp_localize_script('claude-chat-script', 'claudeChat', array(
-            'ajax_url'      => admin_url('admin-ajax.php'),
-            'nonce'         => wp_create_nonce('claude-chat-nonce'),
-            /* FIX: Only expose a boolean flag — never the prompt text itself.
-               The actual prompt text is appended server-side in
-               claude_chat_ajax_handler().
-            */
-            'addon_enabled' => get_option('claude_chat_addon_prompt_enabled', '0') === '1',
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce'    => wp_create_nonce('claude-chat-nonce'),
         ));
 }
 add_action('wp_enqueue_scripts', 'claude_chat_enqueue_scripts');
 
 /* Shortcode to display the chat interface */
 function claude_chat_shortcode() {
-    $addon_enabled = get_option('claude_chat_addon_prompt_enabled', '0');
-    $addon_label   = get_option('claude_chat_addon_prompt_label', '');
-
     ob_start();
 ?>
     <div id="claude-chat-interface">
         <div id="claude-chat-messages"></div>
-        <?php if ( $addon_enabled === '1' ) : ?>
-        <div id="claude-chat-addon">
-            <label>
-                <input type="checkbox" id="claude-chat-addon-checkbox">
-                <?php echo esc_html( $addon_label ); ?>
-            </label>
-        </div>
-        <?php endif; ?>
         <textarea id="claude-chat-input" placeholder="Ask Claude something..." rows="3"></textarea>
         <button id="claude-chat-submit">Send</button>
     </div>
@@ -119,18 +94,6 @@ function claude_chat_ajax_handler() {
     /* FIX: Use sanitize_textarea_field so newlines in multi-line messages
        are preserved (sanitize_text_field strips them). */
     $message = sanitize_textarea_field($_POST['message']);
-
-    /* FIX: The addon prompt text never travels to the browser.
-       The JS sends only a boolean flag; we append the stored prompt
-       server-side.
-    */
-    $addon_checked = ! empty($_POST['addon_enabled']) && $_POST['addon_enabled'] === '1';
-    if ($addon_checked && get_option('claude_chat_addon_prompt_enabled', '0') === '1') {
-        $addon_text = get_option('claude_chat_addon_prompt_text', '');
-        if ($addon_text !== '') {
-            $message = $message . "\n" . $addon_text;
-        }
-    }
 
     $response = claude_chat_api_request($message);
     if ($response) {
@@ -471,20 +434,6 @@ function claude_chat_settings_init() {
             'description' => 'Optional. Sent as the system prompt on every request, keeping it separate from user input. Uses cache_control to save costs. Leave blank to disable.',
         )
     );
-
-    /*
-      Additional prompt field — a single settings row that groups together:
-      1. An enable/disable checkbox
-      2. A text input for the checkbox label shown in the user form
-      3. A textarea for the prompt text that gets appended to the message
-    */
-    add_settings_field(
-        'claude_chat_addon_prompt',
-        'Additional Prompt',
-        'claude_chat_addon_prompt_callback',
-        'claude-chat-settings',
-        'claude_chat_settings_section'
-    );
 }
 add_action('admin_init', 'claude_chat_settings_init');
 
@@ -551,54 +500,4 @@ function claude_chat_textarea_field_callback($args) {
     if ( ! empty($args['description'])) {
         echo '<p class="description">' . wp_kses($args['description'], array('code' => array())) . '</p>';
     }
-}
-
-
-/*
-  Callback for the "Additional Prompt" settings row.
-
-  Renders three controls in one table row:
-    Row 1 — Enable checkbox + label text input (inline)
-    Row 2 — Prompt textarea
-*/
-function claude_chat_addon_prompt_callback() {
-    $enabled = get_option('claude_chat_addon_prompt_enabled', '0');
-    $label   = get_option('claude_chat_addon_prompt_label', '');
-    $text    = get_option('claude_chat_addon_prompt_text', '');
-
-    /* ---- Enable checkbox + label input (same line) ---- */
-    echo '<label style="display:inline-flex; align-items:center; gap:6px;">';
-    echo '<input type="checkbox"'
-        . ' id="claude_chat_addon_prompt_enabled"'
-        . ' name="claude_chat_addon_prompt_enabled"'
-        . ' value="1"'
-        . checked('1', $enabled, false)
-        . '>';
-    echo '<strong>Enable</strong>';
-    echo '</label>';
-
-    echo '&nbsp;&nbsp;';
-
-    echo '<label for="claude_chat_addon_prompt_label" style="font-weight:normal;">Checkbox label:&nbsp;</label>';
-    echo '<input type="text"'
-        . ' id="claude_chat_addon_prompt_label"'
-        . ' name="claude_chat_addon_prompt_label"'
-        . ' value="' . esc_attr($label) . '"'
-        . ' class="regular-text"'
-        . ' placeholder="e.g. Include extra context">';
-
-    /* ---- Prompt textarea ---- */
-    echo '<br><br>';
-    echo '<textarea' .
-        ' id="claude_chat_addon_prompt_text"' .
-        ' name="claude_chat_addon_prompt_text"' .
-        ' rows="4" cols="60" class="large-text code">' .
-        esc_textarea($text) .
-        '</textarea>';
-
-    echo '<p class="description">' .
-        'When <strong>Enable</strong> is checked, the checkbox label' .
-        ' will be shown in the user chat form (before the message' .
-        ' input). If the user ticks that checkbox, the Additional Prompt' .
-        ' will be appended to the Prompt Prefix.</p>';
 }

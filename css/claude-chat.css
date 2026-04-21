@@ -31,26 +31,6 @@
     background-color: #f0f0f0;
 }
 
-/* Addon checkbox row shown above the message textarea */
-#claude-chat-addon {
-    padding: 6px 10px;
-    border-top: 1px solid #ccc;
-    background-color: #f9f9f9;
-    font-size: 0.9em;
-}
-
-#claude-chat-addon label {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-}
-
-#claude-chat-addon input[type="checkbox"] {
-    margin: 0;
-    cursor: pointer;
-}
-
 #claude-chat-input {
     width: calc(100% - 80px);
     padding: 10px;
