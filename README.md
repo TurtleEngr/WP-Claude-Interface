@@ -45,7 +45,10 @@ Go to 'Settings' > 'Claude Chat' in the WordPress admin panel to configure the f
 - **Model**: Select the Claude model you wish to use.
 - **Temperature**: Adjust the randomness of responses (value between 0.0 and 1.0).
 - **Max Tokens**: Set the maximum number of tokens for the response.
-- **Prefix Prompt**: Optinal text can be added before the user's question.
+- **Prefix Prompt**: Define a prompt that will be put before the user's prompt.
+- **Save Setting** button: Save the current settings.
+- **Clear Logs** button: the chat and error logs will be cleared
+- Links below Clear Logs are links to the log files that can be downloaded.
 
 ## Customization
 
@@ -83,17 +86,6 @@ After the API reply is received, this helper checks
 and strips it if so. Claude won't normally echo the prefix back, but
 this guards against edge cases where it does.
 
-### Added: Additional Prefix Prompt
-
-The user can turn an additional prompt on or off with a checkbox.  The
-Additional Prefix Prompt is added to the settings menu, and enabled
-with a checkbox. The field after the check box is the label that will
-be shown on the user's form.
-
-Use case: add or override directions in the main prompt. Usually this
-would be for changing how to look for the answer or how to format the
-answer output.
-
 **`claude.php`**: Register 3 new options (`addon_prompt_enabled`,
 addon_prompt_label`, `addon_prompt_text`), add a single settings field
 with a custom callback rendering all three controls, update the
@@ -117,9 +109,7 @@ would be silently dropped).
 
 Bumped Max Tokens ceiling to 8096 to match modern model limits.
 
-### js or css changes?
-
-No changes.
+### js or css changes
 
 js/claude-chat.js — The JavaScript only handles the chat UI: capturing
 the user's input, sending it to admin-ajax.php via AJAX, and
@@ -134,10 +124,9 @@ is needed.
 
 ## Requirements
 
-- **WordPress**: Version 5.0 or higher.
-- **PHP**: Version 7.0 or higher.
+- **WordPress**: Version 5.0 or higher. (tested with 6.9.4)
+- **PHP**: Version 7.0 or higher. (tested with 8.3.30)
 - **Claude API Key**: A valid Claude API key is required.
-
 
 ### Screenshots
 #### Public View
@@ -158,11 +147,6 @@ Max Tokens - Range: 1 to 8096
 Prefix Prompt - Optional. Sent as the system prompt on every request,
 keeping it separate from user input. Uses cache_control to save
 costs. Leave blank to disable.
-
-Additional Prompt - When Enable is checked,the checkbox label will be
-shown in the user chat form (before the message input). If the user
-ticks that checkbox, the Additional Prompt will be
-appended to the Prompt Prefix.
 
 Save Settings - Save any changes.
 
