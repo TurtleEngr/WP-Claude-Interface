@@ -3,7 +3,7 @@
 
 SHELL := /bin/bash
 
-mVerStr = 1.7
+mVerStr = 2.0.0
 
 mDistList = \
 	dist/claude-chat-interface/css \
