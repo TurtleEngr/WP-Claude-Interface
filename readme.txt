@@ -38,6 +38,9 @@ You need to register with Claude AI to obtain your API key.
 
 == Changelog ==
 
+= 2.2 =
+* Added new feature: fetch-url, and pre-fetch-urls
+
 = 1.7 =
 * Removed the Additional Prompt feature. It did not work well and it
   clutters the code.

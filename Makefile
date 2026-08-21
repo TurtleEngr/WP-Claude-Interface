@@ -3,7 +3,7 @@
 
 SHELL := /bin/bash
 
-mVerStr = 1.7
+mVerStr = 2.2
 
 mDistList = \
 	dist/claude-chat-interface/css \
@@ -13,6 +13,8 @@ mDistList = \
 	dist/claude-chat-interface/claude_set.png \
 	dist/claude-chat-interface/readme.txt
 
+mReleaseDir = moria.whyayh.com:/rel/released/software/own/claude-chat-interface
+
 # ----------
 # Main Targets
 
@@ -20,6 +22,7 @@ usage :
 	@echo "Usage:"
 	@echo "build - build dist/ with dirs and files to be installed"
 	@echo "package - create plugin install zip file"
+	@echo "release - copy zip files to release area"
 	@echo "clean - rm tmp files"
 	@echo "dist-clean - clean and remove tmp dirs"
 
@@ -28,6 +31,12 @@ build : clean dist/claude-chat-interface $(mDistList)
 
 package : build pkg
 	cd dist; zip -r ../pkg/claude-chat-interface-$(mVerStr).zip claude-chat-interface
+
+tag :
+	git tag -f ver-$(mVerStr)
+
+release : package tag
+	'rsync' -aP readme.txt claude-chat-interface-$(mVerStr).zip $(mReleaseDir)
 
 clean :
 	-find . -type f -name '*~' -exec rm {} \;
