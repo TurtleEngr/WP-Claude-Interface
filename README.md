@@ -65,29 +65,29 @@ Go to 'Settings' > 'Claude Chat' in the WordPress admin panel to configure the f
 
 ## Customization
 
-- These internal constants can be changed. The defaults values are
-  shown here. Also, some of these values will be shown in the Claude
-  Chat Settings admin form.
+These internal constants can be changed. The defaults values are
+shown here. Also, some of these values will be shown in the Claude
+Chat Settings admin form.
 
 - **cgClaudeChatFetchTimeOut**: 5sec for each URL fetch
 - **cgClaudeChatResponseBudget**:  20sec for the whole response
 
 - **cgClaudeChatPreFetchTtl**: 3600 sec (1 hour)
 - **cgClaudeChatMaxPreFetchUrls**: 10
-- Pre-fetch list limits. Content is cached in a transient for this
-  many seconds, keyed by a hash of the URL list.
+  - Pre-fetch list limits. Content is cached in a transient for this
+    many seconds, keyed by a hash of the URL list.
 
 - **cgClaudeChatMaxFetchBytes**: 256 KB
 - **cgClaudeChatMaxFetchChars**: 20 KB
-- The byte cap protects PHP memory; the character cap protects the
-  token budget — a single large page can otherwise crowd out the
-  Prefix Prompt and the user's actual question. */
+  - The byte cap protects PHP memory; the character cap protects the
+    token budget — a single large page can otherwise crowd out the
+    Prefix Prompt and the user's actual question. */
 
 - **cgClaudeChatMaxToolRounds**: 5
-- Max number of send/tool_result round trips. The response budget is
-  the primary stop condition; this is a backstop so a model that keeps
-  asking for cheap, fast fetches cannot loop indefinitely inside the
-  budget.
+  - Max number of send/tool_result round trips. The response budget is
+    the primary stop condition; this is a backstop so a model that keeps
+    asking for cheap, fast fetches cannot loop indefinitely inside the
+    budget.
 - **cgClaudeChatMaxResponseBytes**: 4 MB
 - **cgClaudeChatMaxLogDumpChars**: 4 KB
 - **cgClaudeChatMaxPrefixPrompt**: 65 KB
@@ -176,24 +176,30 @@ is needed.
 #### Settings
 ![Claude 3 WordPress Pöugin](claude_set.png)
 
-API Key - Put your Claude API key here
-
-Model - Pick the model you want
-
-Temperature - Range: 0 to 1
-
-Max Tokens - Range: 1 to 8096
-
-Prefix Prompt - Optional. Sent as the system prompt on every request,
-keeping it separate from user input. Uses cache_control to save
-costs. Leave blank to disable.
-
-Save Settings - Save any changes.
-
-Clear Logs - This button will clear the user and error logs.
-Before clearing the logs, they can be viewed at:
-https://WP-HOME/wp-content/uploads/claude/claude_log.org
-https://WP-HOME/wp-content/uploads/claude/claude.log
+- API Key - Put your Claude API key here
+- Model - Pick the model you want
+- Temperature - Range: 0 to 1
+- Max Tokens - Range: 1 to 8096
+- Follow Links - checkbox
+  - When checked, Claude may call the fetch_url tool to read URLs
+    named in the prompt or the user question. Each fetch times out
+    after 5s; the whole fetch loop stops after 20s and answers with
+    what it has. Adds an API round trip per batch of fetches, so
+    replies are slower and cost more tokens.
+- List of pre-fetch URLs - textbox
+  - Optional. One URL per line, max 10. These are always fetched and
+    added to the system prompt, whether or not Follow Links is
+    checked. Content is cached for 60 minutes and truncated to 20,000
+    characters per page. Leave blank to disable.
+- Prefix Prompt - textbox
+  - Optional. Sent as the system prompt on every request, keeping it
+    separate from user input. Uses cache_control to save costs. Leave
+    blank to disable. Max 65,536 bytes.
+- Save Settings - Save any changes.
+- Clear Logs - This button will clear the user and error logs.
+  - Before clearing the logs, they can be viewed at:
+  - https://WP-HOME/wp-content/uploads/claude/claude_log.org
+  - https://WP-HOME/wp-content/uploads/claude/claude.log
 
 ## Support
 
