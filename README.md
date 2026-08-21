@@ -22,12 +22,23 @@ Integrate the Claude AI chat interface into your WordPress website using a simpl
 - **Claude API Support**: Full support for Claude API parameters such as temperature, max tokens, and more.
 - **AJAX-Based**: Smooth, responsive chat experience powered by AJAX.
 
-## Installation
+## Install Zip File
 
-1. Run "make package" to build and create the zip package.
-2. Install `pkg/claude-chat-interface.zip` plugin.
-3. Activate the plugin.
-4. Navigate to 'Settings' > 'Claude Chat' to configure your API settings.
+1. Download the latest zip file from:
+  [claude-chat-interface](https://moria.whyayh.com/rel/released/software/own/claude-chat-interface/)
+2. At the WP plugin admin page, click on "Add Plugin", click on "Upload Plugin"
+3. Browse to the zip file and select it, open, click on "Install Now"
+4. Activate the plugin.
+5. Navigate to 'Settings' > 'Claude Chat' to configure your API settings.
+
+## Build/Install
+
+1. Clone this repo
+1. Or click on the lastest "tag," select the "Source code" link to
+   download the zip file, then unzip the file.
+2. Run "make package" to build and create the zip package.
+3. Install `pkg/claude-chat-interface.zip` plugin, with the Install
+   Zip File directions
 
 ## Usage
 
@@ -45,12 +56,41 @@ Go to 'Settings' > 'Claude Chat' in the WordPress admin panel to configure the f
 - **Model**: Select the Claude model you wish to use.
 - **Temperature**: Adjust the randomness of responses (value between 0.0 and 1.0).
 - **Max Tokens**: Set the maximum number of tokens for the response.
+- **Follow Links**: Checkbox. If checked URLs in the prompts will be followed.
+- **List of pre-fetch URLs**: One URL per line. Each URL will be read and added to the prompts.
 - **Prefix Prompt**: Define a prompt that will be put before the user's prompt.
 - **Save Setting** button: Save the current settings.
 - **Clear Logs** button: the chat and error logs will be cleared
 - Links below Clear Logs are links to the log files that can be downloaded.
 
 ## Customization
+
+- These internal constants can be changed. The defaults values are
+  shown here. Also, some of these values will be shown in the Claude
+  Chat Settings admin form.
+
+- **CLAUDE_CHAT_FETCH_TIMEOUT**: 5sec for each URL fetch
+- **CLAUDE_CHAT_RESPONSE_BUDGET**:  20sec for the whole response
+
+- **CLAUDE_CHAT_PREFETCH_TTL**: 3600 sec (1 hour)
+- **CLAUDE_CHAT_MAX_PREFETCH_URLS**: 10
+- Pre-fetch list limits. Content is cached in a transient for this
+  many seconds, keyed by a hash of the URL list.
+
+- **CLAUDE_CHAT_MAX_FETCH_BYTES**: 256 KB
+- **CLAUDE_CHAT_MAX_FETCH_CHARS**: 20 KB
+- The byte cap protects PHP memory; the character cap protects the
+  token budget — a single large page can otherwise crowd out the
+  Prefix Prompt and the user's actual question. */
+
+- **CLAUDE_CHAT_MAX_TOOL_ROUNDS**: 5
+- Max number of send/tool_result round trips. The response budget is
+  the primary stop condition; this is a backstop so a model that keeps
+  asking for cheap, fast fetches cannot loop indefinitely inside the
+  budget.
+- **CLAUDE_CHAT_MAX_RESPONSE_BYTES**: 4 MB
+- **CLAUDE_CHAT_MAX_LOG_DUMP_CHARS**: 4 KB
+- **CLAUDE_CHAT_MAX_PREFIX_PROMPT_BYTES**: 65 KB
 
 - **Styling**: Customize the chat interface by editing the `css/claude-chat.css` file.
 - **JavaScript**: Add or modify functionality by editing the `js/claude-chat.js` file.
