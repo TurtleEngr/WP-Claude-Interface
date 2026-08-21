@@ -1,12 +1,11 @@
 <?php
 /**
- * Plugin Name: Claude 3.x Chat Interface
+ * Plugin Name: Claude Chat Interface
  * Plugin URI: https://github.com/TurtleEngr/WP-Claude-Interface/tree/main
  * Description: Adds a Claude AI chat interface to your WordPress site using a shortcode.
  * Version: mVerStr
  * Author: Volkan Kücükbudak, enh: TurtleEngr
  */
-
 
 /* Define the available models */
 define('CLAUDE_MODELS', [
@@ -43,21 +42,17 @@ define('CLAUDE_CHAT_MAX_PREFIX_PROMPT_BYTES', 65536);
 /*
   fetch_url tool limits.
 
-  CLAUDE_CHAT_FETCH_TIMEOUT    — "cFetchN" in the spec. Seconds allowed for a
-                                 single URL fetch. On overrun the fetch is
-                                 abandoned and no content is returned for it.
-  CLAUDE_CHAT_RESPONSE_BUDGET  — "cResponseN" in the spec. Wall-clock seconds
-                                 allowed for the whole tool_use loop. Once
-                                 exceeded, no further URLs are fetched and we
-                                 answer with whatever text we already have.
+  CLAUDE_CHAT_FETCH_TIMEOUT - Seconds allowed for a single URL fetch. On
+  overrun the fetch is abandoned and no content is returned for it.
+                                 
+  CLAUDE_CHAT_RESPONSE_BUDGET - Wall-clock seconds allowed for the
+  whole tool_use loop. Once exceeded, no further URLs are fetched and
+  we answer with whatever text we already have.
 
-                                 CAVEAT: the budget is checked *between* steps.
-                                 An in-flight Claude API call is not
-                                 interrupted, so a slow API round trip can
-                                 overrun the budget (the API call timeout is
-                                 still 60s). If that matters, lower the
-                                 wp_remote_post() timeout in
-                                 claude_chat_api_send().
+  CAVEAT: the budget is checked *between* steps.  An in-flight Claude
+  API call is not interrupted, so a slow API round trip can overrun
+  the budget (the API call timeout is still 60s). If that matters,
+  lower the wp_remote_post() timeout in claude_chat_api_send().
 */
 define('CLAUDE_CHAT_FETCH_TIMEOUT', 5);
 define('CLAUDE_CHAT_RESPONSE_BUDGET', 20);
@@ -206,7 +201,7 @@ function claude_chat_shortcode() {
     <div id="claude-chat-interface">
         <div id="claude-chat-messages"></div>
         <textarea id="claude-chat-input" placeholder="Ask Claude something..." rows="3"></textarea>
-        <button id="claude-chat-submit">Send</button>
+        <button id="claude-chat-submit">Send</button> (Claude Chat Version: mVerStr)
     </div>
     <?php
     return ob_get_clean();
@@ -998,7 +993,7 @@ function claude_chat_settings_init() {
         'claude_chat_settings_section',
         array(
             'label_for'   => 'claude_chat_follow_links',
-            'description' => 'When checked, Claude may call the <code>fetch_url</code> tool to read URLs '
+            'description' => 'When checked, Claude may call the fetch_url tool to read URLs '
                            . 'named in the prompt or the user question. Each fetch times out after '
                            . CLAUDE_CHAT_FETCH_TIMEOUT . 's; the whole fetch loop stops after '
                            . CLAUDE_CHAT_RESPONSE_BUDGET . 's and answers with what it has. '
@@ -1040,6 +1035,7 @@ add_action('admin_init', 'claude_chat_settings_init');
 
 /* Field render callbacks */
 function claude_chat_settings_section_callback($args) {
+    echo '<p>Version: mVerStr</p>';
     echo '<p>Enter your Claude API settings below:</p>';
     echo '<p>Click <a href="https://github.com/TurtleEngr/WP-Claude-Interface/blob/main/README.md" target="_blank">HERE</a> for help.</p>';
 }
