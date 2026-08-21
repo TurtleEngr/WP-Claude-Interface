@@ -32,8 +32,11 @@ build : clean dist/claude-chat-interface $(mDistList)
 package : build pkg
 	cd dist; zip -r ../pkg/claude-chat-interface-$(mVerStr).zip claude-chat-interface
 
-release : package
-	'rsync' -aP readme.txt pkg/*.zip $(mReleaseDir)
+tag :
+	git tag -f ver-$(mVerStr)
+
+release : package tag
+	'rsync' -aP readme.txt claude-chat-interface-$(mVerStr).zip $(mReleaseDir)
 
 clean :
 	-find . -type f -name '*~' -exec rm {} \;
