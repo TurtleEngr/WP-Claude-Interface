@@ -37,8 +37,8 @@ Integrate the Claude AI chat interface into your WordPress website using a simpl
 1. Or click on the lastest "tag," select the "Source code" link to
    download the zip file, then unzip the file.
 2. Run "make package" to build and create the zip package.
-3. Install `pkg/claude-chat-interface.zip` plugin, with the Install
-   Zip File directions
+3. Install `pkg/claude-chat-interface.zip` plugin, with the above
+   **Install Zip File** directions.
 
 ## Usage
 
