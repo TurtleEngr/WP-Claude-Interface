@@ -35,7 +35,7 @@ package : build pkg
 tag :
 	git tag -f ver-$(mVerStr)
 
-release : package tag
+release : tag
 	'rsync' -aP readme.txt claude-chat-interface-$(mVerStr).zip $(mReleaseDir)
 
 clean :
