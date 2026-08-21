@@ -69,28 +69,28 @@ Go to 'Settings' > 'Claude Chat' in the WordPress admin panel to configure the f
   shown here. Also, some of these values will be shown in the Claude
   Chat Settings admin form.
 
-- **CLAUDE_CHAT_FETCH_TIMEOUT**: 5sec for each URL fetch
-- **CLAUDE_CHAT_RESPONSE_BUDGET**:  20sec for the whole response
+- **cgClaudeChatFetchTimeOut**: 5sec for each URL fetch
+- **cgClaudeChatResponseBudget**:  20sec for the whole response
 
-- **CLAUDE_CHAT_PREFETCH_TTL**: 3600 sec (1 hour)
-- **CLAUDE_CHAT_MAX_PREFETCH_URLS**: 10
+- **cgClaudeChatPreFetchTtl**: 3600 sec (1 hour)
+- **cgClaudeChatMaxPreFetchUrls**: 10
 - Pre-fetch list limits. Content is cached in a transient for this
   many seconds, keyed by a hash of the URL list.
 
-- **CLAUDE_CHAT_MAX_FETCH_BYTES**: 256 KB
-- **CLAUDE_CHAT_MAX_FETCH_CHARS**: 20 KB
+- **cgClaudeChatMaxFetchBytes**: 256 KB
+- **cgClaudeChatMaxFetchChars**: 20 KB
 - The byte cap protects PHP memory; the character cap protects the
   token budget — a single large page can otherwise crowd out the
   Prefix Prompt and the user's actual question. */
 
-- **CLAUDE_CHAT_MAX_TOOL_ROUNDS**: 5
+- **cgClaudeChatMaxToolRounds**: 5
 - Max number of send/tool_result round trips. The response budget is
   the primary stop condition; this is a backstop so a model that keeps
   asking for cheap, fast fetches cannot loop indefinitely inside the
   budget.
-- **CLAUDE_CHAT_MAX_RESPONSE_BYTES**: 4 MB
-- **CLAUDE_CHAT_MAX_LOG_DUMP_CHARS**: 4 KB
-- **CLAUDE_CHAT_MAX_PREFIX_PROMPT_BYTES**: 65 KB
+- **cgClaudeChatMaxResponseBytes**: 4 MB
+- **cgClaudeChatMaxLogDumpChars**: 4 KB
+- **cgClaudeChatMaxPrefixPrompt**: 65 KB
 
 - **Styling**: Customize the chat interface by editing the `css/claude-chat.css` file.
 - **JavaScript**: Add or modify functionality by editing the `js/claude-chat.js` file.
@@ -99,16 +99,16 @@ Go to 'Settings' > 'Claude Chat' in the WordPress admin panel to configure the f
 
 ### Added: Prefix Prompt
 
-Registered in claude_chat_register_settings() with
+Registered in fClaudeChatRegisterSettings() with
 sanitize_textarea_field as its sanitize callback (multi-line safe).
 
 Added at the bottom of the settings form via
-`claude_chat_settings_init().` It uses
-`claude_chat_textarea_field_callback()` that renders a &lt;textarea>
+`fClaudeChatSettingsInit().` It uses
+`fClaudeChatTextareaFieldCallback()` that renders a &lt;textarea>
 (6 rows × 60 cols) with a description explaining the caching
 behaviour. Leaving it blank disables the feature entirely.
 
-**prefix + cache_control** - `claude_chat_api_request()`
+**prefix + cache_control** - `fClaudeChatApiRequest()`
 
 When a prefix is saved, the user message is sent as a two-block
 content array instead of a plain string.
@@ -141,7 +141,7 @@ row in the user form.
 
 ### Minor improvements
 
-Added newer models to `CLAUDE_MODELS` (Claude 3.5 Haiku, Claude 3.5
+Added newer models to `cgClaudeChatModels` (Claude 3.5 Haiku, Claude 3.5
 Sonnet Oct 2024, Claude 3.7 Sonnet).
 
 Fixed temperature to only be sent when it's actually set (previously 0

@@ -8,7 +8,7 @@
  */
 
 /* Define the available models */
-define('CLAUDE_MODELS', [
+define('cgClaudeChatModels', [
         'claude-3-haiku-20240307'      => 'Claude 3.0 Haiku',
         'claude-3-5-haiku-20241022'    => 'Claude 3.5 Haiku',
         'claude-haiku-4-5-20251001'    => 'Claude 4.5 Haiku',
@@ -26,86 +26,86 @@ define('CLAUDE_MODELS', [
    legitimate response; an overage means something is wrong and we should
    fail fast rather than consume all available PHP memory inside
    wp-includes/Requests/src/Requests.php during response parsing. */
-define('CLAUDE_CHAT_MAX_RESPONSE_BYTES', 4 * 1024 * 1024); /* 4 MB */
+define('cgClaudeChatMaxResponseBytes', 4 * 1024 * 1024); /* 4 MB */
 
 /* Max characters dumped into claude.log when an API error occurs. The raw
    response body is *not* a useful debugging aid past the first few KB, and
    we don't want a single bad response to fill the disk or hold a huge
    string in memory. */
-define('CLAUDE_CHAT_MAX_LOG_DUMP_CHARS', 4096);
+define('cgClaudeChatMaxLogDumpChars', 4096);
 
 /* Max length (bytes) of the Prefix Prompt stored as an option. 64 KB is
    roughly 10,000 words — more than a page. Anything larger almost
    certainly means a mispaste. */
-define('CLAUDE_CHAT_MAX_PREFIX_PROMPT_BYTES', 65536);
+define('cgClaudeChatMaxPrefixPrompt', 65536);
 
 /*
   fetch_url tool limits.
 
-  CLAUDE_CHAT_FETCH_TIMEOUT - Seconds allowed for a single URL fetch. On
+  cgClaudeChatFetchTimeOut - Seconds allowed for a single URL fetch. On
   overrun the fetch is abandoned and no content is returned for it.
                                  
-  CLAUDE_CHAT_RESPONSE_BUDGET - Wall-clock seconds allowed for the
+  cgClaudeChatResponseBudget - Wall-clock seconds allowed for the
   whole tool_use loop. Once exceeded, no further URLs are fetched and
   we answer with whatever text we already have.
 
   CAVEAT: the budget is checked *between* steps.  An in-flight Claude
   API call is not interrupted, so a slow API round trip can overrun
   the budget (the API call timeout is still 60s). If that matters,
-  lower the wp_remote_post() timeout in claude_chat_api_send().
+  lower the wp_remote_post() timeout in fClaudeChatApiSend().
 */
-define('CLAUDE_CHAT_FETCH_TIMEOUT', 5);
-define('CLAUDE_CHAT_RESPONSE_BUDGET', 20);
+define('cgClaudeChatFetchTimeOut', 5);
+define('cgClaudeChatResponseBudget', 20);
 
 /* Max bytes read from a fetched page, and max characters of extracted text
    handed back to Claude. The byte cap protects PHP memory; the character cap
    protects the token budget — a single large page can otherwise crowd out the
    Prefix Prompt and the user's actual question. */
-define('CLAUDE_CHAT_MAX_FETCH_BYTES', 256 * 1024); /* 256 KB */
-define('CLAUDE_CHAT_MAX_FETCH_CHARS', 20000);
+define('cgClaudeChatMaxFetchBytes', 256 * 1024); /* 256 KB */
+define('cgClaudeChatMaxFetchChars', 20000);
 
 /* Max number of send/tool_result round trips. The response budget is the
    primary stop condition; this is a backstop so a model that keeps asking for
    cheap, fast fetches cannot loop indefinitely inside the budget. */
-define('CLAUDE_CHAT_MAX_TOOL_ROUNDS', 5);
+define('cgClaudeChatMaxToolRounds', 5);
 
 /* Pre-fetch list limits. Content is cached in a transient for this many
    seconds, keyed by a hash of the URL list. */
-define('CLAUDE_CHAT_PREFETCH_TTL', 3600); /* 1 hour */
-define('CLAUDE_CHAT_MAX_PREFETCH_URLS', 10);
+define('cgClaudeChatPreFetchTtl', 3600); /* 1 hour */
+define('cgClaudeChatMaxPreFetchUrls', 10);
 
 /* Register settings */
-function claude_chat_register_settings() {
+function fClaudeChatRegisterSettings() {
     register_setting('claude_chat_options', 'claude_chat_api_key');
     register_setting('claude_chat_options', 'claude_chat_model');
     register_setting('claude_chat_options', 'claude_chat_temperature');
     register_setting('claude_chat_options', 'claude_chat_max_tokens');
     register_setting('claude_chat_options', 'claude_chat_follow_links', [
-            'sanitize_callback' => 'claude_chat_sanitize_follow_links',
+            'sanitize_callback' => 'fClaudeChatSanitizeFollowLinks',
         ]);
     register_setting('claude_chat_options', 'claude_chat_prefetch_urls', [
-            'sanitize_callback' => 'claude_chat_sanitize_prefetch_urls',
+            'sanitize_callback' => 'fClaudeChatSanitizePreFetchUrls',
         ]);
     /* FIX (memory): custom sanitize callback enforces a length cap so a
        pathologically large paste cannot be written to wp_options. */
     register_setting('claude_chat_options', 'claude_chat_prefix_prompt', [
-            'sanitize_callback' => 'claude_chat_sanitize_prefix_prompt',
+            'sanitize_callback' => 'fClaudeChatSanitizePrefixPrompt',
         ]);
 }
-add_action('admin_init', 'claude_chat_register_settings');
+add_action('admin_init', 'fClaudeChatRegisterSettings');
 
 /*
   FIX (memory): Sanitize callback for the Prefix Prompt.
   Runs sanitize_textarea_field first, then clamps the length to
-  CLAUDE_CHAT_MAX_PREFIX_PROMPT_BYTES. If truncation occurs, a
+  cgClaudeChatMaxPrefixPrompt. If truncation occurs, a
   settings-error notice is registered so the user sees what happened
   on the settings screen.
 */
-function claude_chat_sanitize_prefix_prompt( $value ) {
+function fClaudeChatSanitizePrefixPrompt( $value ) {
     $value = sanitize_textarea_field( $value );
     $len   = strlen( $value );
-    if ( $len > CLAUDE_CHAT_MAX_PREFIX_PROMPT_BYTES ) {
-        $value = substr( $value, 0, CLAUDE_CHAT_MAX_PREFIX_PROMPT_BYTES );
+    if ( $len > cgClaudeChatMaxPrefixPrompt ) {
+        $value = substr( $value, 0, cgClaudeChatMaxPrefixPrompt );
         add_settings_error(
             'claude_chat_prefix_prompt',
             'claude_chat_prefix_prompt_truncated',
@@ -113,7 +113,7 @@ function claude_chat_sanitize_prefix_prompt( $value ) {
                 /* translators: 1: submitted size, 2: allowed size */
                 esc_html__( 'Prefix Prompt was %1$d bytes; truncated to the %2$d-byte limit.', 'claude-chat' ),
                 $len,
-                CLAUDE_CHAT_MAX_PREFIX_PROMPT_BYTES
+                cgClaudeChatMaxPrefixPrompt
             ),
             'warning'
         );
@@ -126,10 +126,10 @@ function claude_chat_sanitize_prefix_prompt( $value ) {
  * Normalise the Follow Links checkbox to '1' or ''.
  *
  * The settings form posts a hidden '0' before the checkbox (see
- * claude_chat_checkbox_field_callback), so an unchecked box still submits a
+ * fClaudeChatCheckboxFieldCallback), so an unchecked box still submits a
  * value and the option is correctly cleared.
  */
-function claude_chat_sanitize_follow_links( $value ) {
+function fClaudeChatSanitizeFollowLinks( $value ) {
     return ( $value === '1' ) ? '1' : '';
 }
 
@@ -139,9 +139,9 @@ function claude_chat_sanitize_follow_links( $value ) {
  *
  * Invalid lines are dropped with a settings-error notice rather than silently
  * accepted, so a typo does not turn into a silent no-op at request time. The
- * list is capped at CLAUDE_CHAT_MAX_PREFETCH_URLS entries.
+ * list is capped at cgClaudeChatMaxPreFetchUrls entries.
  */
-function claude_chat_sanitize_prefetch_urls( $value ) {
+function fClaudeChatSanitizePreFetchUrls( $value ) {
     $lines   = preg_split( '/\r\n|\r|\n/', (string) $value );
     $urls    = array();
     $skipped = 0;
@@ -151,7 +151,7 @@ function claude_chat_sanitize_prefetch_urls( $value ) {
         if ( $line === '' ) {
             continue;
         }
-        if ( count( $urls ) >= CLAUDE_CHAT_MAX_PREFETCH_URLS ) {
+        if ( count( $urls ) >= cgClaudeChatMaxPreFetchUrls ) {
             $skipped++;
             continue;
         }
@@ -173,7 +173,7 @@ function claude_chat_sanitize_prefetch_urls( $value ) {
                 /* translators: 1: number skipped, 2: allowed maximum */
                 esc_html__( '%1$d pre-fetch line(s) dropped: invalid, non-http(s), private address, or beyond the %2$d-URL limit.', 'claude-chat' ),
                 $skipped,
-                CLAUDE_CHAT_MAX_PREFETCH_URLS
+                cgClaudeChatMaxPreFetchUrls
             ),
             'warning'
         );
@@ -184,7 +184,7 @@ function claude_chat_sanitize_prefetch_urls( $value ) {
 
 
 /* Enqueue necessary scripts and styles */
-function claude_chat_enqueue_scripts() {
+function fClaudeChatEnqueueScripts() {
     wp_enqueue_style('claude-chat-style', plugin_dir_url(__FILE__) . 'css/claude-chat.css');
     wp_enqueue_script('claude-chat-script', plugin_dir_url(__FILE__) . 'js/claude-chat.js', array('jquery'), 'mVerStr', true);
     wp_localize_script('claude-chat-script', 'claudeChat', array(
@@ -192,10 +192,10 @@ function claude_chat_enqueue_scripts() {
             'nonce'    => wp_create_nonce('claude-chat-nonce'),
         ));
 }
-add_action('wp_enqueue_scripts', 'claude_chat_enqueue_scripts');
+add_action('wp_enqueue_scripts', 'fClaudeChatEnqueueScripts');
 
 /* Shortcode to display the chat interface */
-function claude_chat_shortcode() {
+function fClaudeChatShortCode() {
     ob_start();
 ?>
     <div id="claude-chat-interface">
@@ -206,13 +206,13 @@ function claude_chat_shortcode() {
     <?php
     return ob_get_clean();
 }
-add_shortcode('claude_chat', 'claude_chat_shortcode');
+add_shortcode('claude_chat', 'fClaudeChatShortCode');
 
 /*
    FIX: Transient-based rate limiter — max 10 requests per minute per IP.
    Returns true when the request is allowed, false when the limit is exceeded.
 */
-function claude_chat_check_rate_limit() {
+function fClaudeChatCheckRateLimit() {
     $ip            = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
     $transient_key = 'claude_chat_rate_' . md5($ip);
     $count         = get_transient($transient_key);
@@ -235,11 +235,11 @@ function claude_chat_check_rate_limit() {
 
 
 /* AJAX handler for chat requests */
-function claude_chat_ajax_handler() {
+function fClaudeChatAjaxHandler() {
     check_ajax_referer('claude-chat-nonce', 'nonce');
 
     /* FIX: Enforce rate limit before doing any further work. */
-    if ( ! claude_chat_check_rate_limit() ) {
+    if ( ! fClaudeChatCheckRateLimit() ) {
         wp_send_json_error('Rate limit exceeded. Please wait a moment before sending another message.');
         return;
     }
@@ -248,15 +248,15 @@ function claude_chat_ajax_handler() {
        are preserved (sanitize_text_field strips them). */
     $message = sanitize_textarea_field($_POST['message']);
 
-    $response = claude_chat_api_request($message);
+    $response = fClaudeChatApiRequest($message);
     if ($response) {
         wp_send_json_success($response);
     } else {
         wp_send_json_error('Error: No response from API');
     }
 }
-add_action('wp_ajax_claude_chat',        'claude_chat_ajax_handler');
-add_action('wp_ajax_nopriv_claude_chat', 'claude_chat_ajax_handler');
+add_action('wp_ajax_claude_chat',        'fClaudeChatAjaxHandler');
+add_action('wp_ajax_nopriv_claude_chat', 'fClaudeChatAjaxHandler');
 
 /*
   Logging helpers
@@ -273,7 +273,7 @@ add_action('wp_ajax_nopriv_claude_chat', 'claude_chat_ajax_handler');
  * @param string  $log_file   Filename inside that subdirectory.
  * @return string|false       Absolute path on success, false on failure.
  */
-function claude_chat_get_log_path( $log_subdir = 'claude', $log_file = '' ) {
+function fClaudeChatGetLogPath( $log_subdir = 'claude', $log_file = '' ) {
     $upload_info = wp_upload_dir();
 
     if ( ! empty( $upload_info['error'] ) ) {
@@ -309,7 +309,7 @@ function claude_chat_get_log_path( $log_subdir = 'claude', $log_file = '' ) {
  * @return string          Safe-to-log string, never longer than
  *                         $max_chars + a short truncation marker.
  */
-function claude_chat_truncate_for_log( $value, $max_chars = CLAUDE_CHAT_MAX_LOG_DUMP_CHARS ) {
+function fClaudeChatTruncateForLog( $value, $max_chars = cgClaudeChatMaxLogDumpChars ) {
     if ( ! is_string( $value ) ) {
         $value = print_r( $value, true );
     }
@@ -334,11 +334,11 @@ function claude_chat_truncate_for_log( $value, $max_chars = CLAUDE_CHAT_MAX_LOG_
  * @param string  $message  The sanitised user message sent to the API.
  * @param string  $response The text returned by the Claude API.
  */
-function claude_chat_log_message( $message, $response ) {
+function fClaudeChatLogMessage( $message, $response ) {
     $log_subdir = 'claude';
     $log_file   = 'claude_log.org';
 
-    $path = claude_chat_get_log_path( $log_subdir, $log_file );
+    $path = fClaudeChatGetLogPath( $log_subdir, $log_file );
     if ( $path === false ) {
         return; /* Could not resolve / create the directory — fail silently. */
     }
@@ -362,11 +362,11 @@ function claude_chat_log_message( $message, $response ) {
  * @param string  $error_type    Short label, e.g. 'HTTP Error', 'API Error'.
  * @param string  $error_message Full error detail.
  */
-function claude_chat_log_error( $error_type, $error_message ) {
+function fClaudeChatLogError( $error_type, $error_message ) {
     $log_subdir = 'claude';
     $log_file   = 'claude.log';
 
-    $path = claude_chat_get_log_path( $log_subdir, $log_file );
+    $path = fClaudeChatGetLogPath( $log_subdir, $log_file );
     if ( $path === false ) {
         return;
     }
@@ -387,12 +387,12 @@ function claude_chat_log_error( $error_type, $error_message ) {
  * script/style/noscript bodies are removed first: wp_strip_all_tags() drops
  * the tags but keeps their contents, which would otherwise hand Claude a pile
  * of JavaScript. The result is whitespace-collapsed and clamped to
- * CLAUDE_CHAT_MAX_FETCH_CHARS characters.
+ * cgClaudeChatMaxFetchChars characters.
  *
  * @param string $html Raw response body.
  * @return string      Plain text, possibly truncated.
  */
-function claude_chat_html_to_text( $html ) {
+function fClaudeChatHtmlToText( $html ) {
     $stripped = preg_replace( '#<(script|style|noscript)\b[^>]*>.*?</\1>#is', ' ', $html );
     /* preg_replace() returns null on failure (e.g. hitting the backtrack
        limit on a pathological document) — fall back to the raw body. */
@@ -407,12 +407,12 @@ function claude_chat_html_to_text( $html ) {
     $text = trim( (string) $text );
 
     if ( function_exists( 'mb_strlen' ) ) {
-        if ( mb_strlen( $text, 'UTF-8' ) > CLAUDE_CHAT_MAX_FETCH_CHARS ) {
-            $text = mb_substr( $text, 0, CLAUDE_CHAT_MAX_FETCH_CHARS, 'UTF-8' )
+        if ( mb_strlen( $text, 'UTF-8' ) > cgClaudeChatMaxFetchChars ) {
+            $text = mb_substr( $text, 0, cgClaudeChatMaxFetchChars, 'UTF-8' )
                   . "\n... [truncated]";
         }
-    } elseif ( strlen( $text ) > CLAUDE_CHAT_MAX_FETCH_CHARS ) {
-        $text = substr( $text, 0, CLAUDE_CHAT_MAX_FETCH_CHARS ) . "\n... [truncated]";
+    } elseif ( strlen( $text ) > cgClaudeChatMaxFetchChars ) {
+        $text = substr( $text, 0, cgClaudeChatMaxFetchChars ) . "\n... [truncated]";
     }
 
     return $text;
@@ -428,39 +428,39 @@ function claude_chat_html_to_text( $html ) {
  * internal service or a cloud metadata endpoint. On a public-facing page,
  * consider tightening this to an explicit hostname allow-list.
  *
- * Honours CLAUDE_CHAT_FETCH_TIMEOUT (cFetchN): on timeout the call is
+ * Honours cgClaudeChatFetchTimeOut (cFetchN): on timeout the call is
  * abandoned and false is returned.
  *
  * @param string $url Absolute http(s) URL.
  * @return string|false Extracted text, or false on any failure.
  */
-function claude_chat_fetch_url( $url ) {
+function fClaudeChatFetchUrl( $url ) {
     $url = esc_url_raw( trim( (string) $url ) );
 
     if ( $url === '' || ! wp_http_validate_url( $url ) ) {
-        claude_chat_log_error( 'Fetch Rejected', claude_chat_truncate_for_log( $url, 256 ) );
+        fClaudeChatLogError( 'Fetch Rejected', fClaudeChatTruncateForLog( $url, 256 ) );
         return false;
     }
 
     $response = wp_safe_remote_get( $url, array(
-            'timeout'             => CLAUDE_CHAT_FETCH_TIMEOUT,
+            'timeout'             => cgClaudeChatFetchTimeOut,
             'redirection'         => 3,
-            'limit_response_size' => CLAUDE_CHAT_MAX_FETCH_BYTES,
+            'limit_response_size' => cgClaudeChatMaxFetchBytes,
             'user-agent'          => 'WP-Claude-Interface/mVerStr',
         ) );
 
     if ( is_wp_error( $response ) ) {
-        claude_chat_log_error( 'Fetch Error', $url . ' - ' . $response->get_error_message() );
+        fClaudeChatLogError( 'Fetch Error', $url . ' - ' . $response->get_error_message() );
         return false;
     }
 
     $code = intval( wp_remote_retrieve_response_code( $response ) );
     if ( $code !== 200 ) {
-        claude_chat_log_error( 'Fetch Error', $url . ' - HTTP ' . $code );
+        fClaudeChatLogError( 'Fetch Error', $url . ' - HTTP ' . $code );
         return false;
     }
 
-    return claude_chat_html_to_text( wp_remote_retrieve_body( $response ) );
+    return fClaudeChatHtmlToText( wp_remote_retrieve_body( $response ) );
 }
 
 
@@ -477,7 +477,7 @@ function claude_chat_fetch_url( $url ) {
  *
  * @return string System-prompt text, or '' when nothing is configured/fetched.
  */
-function claude_chat_get_prefetch_block() {
+function fClaudeChatGetPreFetchBlock() {
     $raw = trim( get_option( 'claude_chat_prefetch_urls', '' ) );
     if ( $raw === '' ) {
         return '';
@@ -489,7 +489,7 @@ function claude_chat_get_prefetch_block() {
         if ( $line !== '' ) {
             $urls[] = $line;
         }
-        if ( count( $urls ) >= CLAUDE_CHAT_MAX_PREFETCH_URLS ) {
+        if ( count( $urls ) >= cgClaudeChatMaxPreFetchUrls ) {
             break;
         }
     }
@@ -505,7 +505,7 @@ function claude_chat_get_prefetch_block() {
 
     $parts = array();
     foreach ( $urls as $url ) {
-        $text = claude_chat_fetch_url( $url );
+        $text = fClaudeChatFetchUrl( $url );
         if ( $text === false || $text === '' ) {
             continue;
         }
@@ -519,7 +519,7 @@ function claude_chat_get_prefetch_block() {
                . implode( "\n\n", $parts );
     }
 
-    set_transient( $cache_key, $block, CLAUDE_CHAT_PREFETCH_TTL );
+    set_transient( $cache_key, $block, cgClaudeChatPreFetchTtl );
     return $block;
 }
 
@@ -527,7 +527,7 @@ function claude_chat_get_prefetch_block() {
 /**
  * Tool definition sent to the API when Follow Links is enabled.
  */
-function claude_chat_fetch_url_tool_spec() {
+function fClaudeChatFetchUrl_tool_spec() {
     return array(
         'name'         => 'fetch_url',
         'description'  => 'Fetch a web page and return its visible text. Use this whenever the '
@@ -560,7 +560,7 @@ function claude_chat_fetch_url_tool_spec() {
  * first block is frequently a tool_use block, so text must be gathered by
  * type rather than by position.
  */
-function claude_chat_collect_text( $data ) {
+function fClaudeChatCollectText( $data ) {
     if ( empty( $data['content'] ) || ! is_array( $data['content'] ) ) {
         return '';
     }
@@ -584,7 +584,7 @@ function claude_chat_collect_text( $data ) {
  * @return array|string Decoded response array on success; a user-facing error
  *                      string on failure (already logged).
  */
-function claude_chat_api_send( $args ) {
+function fClaudeChatApiSend( $args ) {
     /* Use the correct API-Endpoint. */
     $url = 'https://api.anthropic.com/v1/messages';
 
@@ -636,11 +636,11 @@ function claude_chat_api_send( $args ) {
             'headers'             => $headers,
             'body'                => json_encode( $body ),
             'timeout'             => 60,
-            'limit_response_size' => CLAUDE_CHAT_MAX_RESPONSE_BYTES,
+            'limit_response_size' => cgClaudeChatMaxResponseBytes,
         ) );
 
     if ( is_wp_error( $response ) ) {
-        claude_chat_log_error( 'HTTP Error', $response->get_error_message() );
+        fClaudeChatLogError( 'HTTP Error', $response->get_error_message() );
         return 'Error: ' . $response->get_error_message();
     }
 
@@ -649,16 +649,16 @@ function claude_chat_api_send( $args ) {
     if ( isset( $data['error'] ) ) {
         /* FIX (memory): truncate the dumped payload so a huge error
            body cannot balloon the log file or PHP memory. */
-        claude_chat_log_error( 'API Error', claude_chat_truncate_for_log( $data ) );
+        fClaudeChatLogError( 'API Error', fClaudeChatTruncateForLog( $data ) );
         return 'API Error: ' . $data['error']['message'];
     }
 
     if ( ! is_array( $data ) || ! isset( $data['content'] ) || ! is_array( $data['content'] ) ) {
         /* FIX (memory): same truncation rationale as above. */
-        claude_chat_log_error(
+        fClaudeChatLogError(
             'Unknown Error',
             'Unable to get a response from Claude API. Response: '
-                . claude_chat_truncate_for_log( $data )
+                . fClaudeChatTruncateForLog( $data )
         );
         return 'Error: Unable to get a response from Claude API.';
     }
@@ -675,13 +675,13 @@ function claude_chat_api_send( $args ) {
  *   send -> if the reply contains tool_use blocks, fetch each requested URL,
  *   append the assistant turn plus a matching tool_result for every tool_use
  *   id, and send again. Repeat until the model stops asking, the round cap is
- *   hit, or CLAUDE_CHAT_RESPONSE_BUDGET (cResponseN) is exhausted.
+ *   hit, or cgClaudeChatResponseBudget (cResponseN) is exhausted.
  *
  * Every tool_use block must receive a tool_result with the same id or the
  * next request is rejected, so failed and skipped fetches return an
  * explanatory result rather than being omitted.
  */
-function claude_chat_api_request( $message ) {
+function fClaudeChatApiRequest( $message ) {
     $api_key       = get_option('claude_chat_api_key');
     $model         = get_option('claude_chat_model');
     $temperature   = get_option('claude_chat_temperature');
@@ -714,7 +714,7 @@ function claude_chat_api_request( $message ) {
         $system_blocks[] = array( 'type' => 'text', 'text' => $prefix_prompt );
     }
 
-    $prefetch = claude_chat_get_prefetch_block();
+    $prefetch = fClaudeChatGetPreFetchBlock();
     if ( $prefetch !== '' ) {
         $system_blocks[] = array( 'type' => 'text', 'text' => $prefetch );
     }
@@ -731,13 +731,13 @@ function claude_chat_api_request( $message ) {
         ),
     );
 
-    $tools      = $follow_links ? array( claude_chat_fetch_url_tool_spec() ) : array();
+    $tools      = $follow_links ? array( fClaudeChatFetchUrl_tool_spec() ) : array();
     $final_text = '';
     $timed_out  = false;
 
-    for ( $round = 0; $round <= CLAUDE_CHAT_MAX_TOOL_ROUNDS; $round++ ) {
+    for ( $round = 0; $round <= cgClaudeChatMaxToolRounds; $round++ ) {
 
-        $data = claude_chat_api_send( array(
+        $data = fClaudeChatApiSend( array(
                 'api_key'     => $api_key,
                 'model'       => $model,
                 'max_tokens'  => $max_tokens,
@@ -751,7 +751,7 @@ function claude_chat_api_request( $message ) {
             return $data; /* Already logged, and safe to show the user. */
         }
 
-        $text = claude_chat_collect_text( $data );
+        $text = fClaudeChatCollectText( $data );
         if ( $text !== '' ) {
             $final_text = $text;
         }
@@ -768,19 +768,19 @@ function claude_chat_api_request( $message ) {
             break; /* Normal completion. */
         }
 
-        if ( $round === CLAUDE_CHAT_MAX_TOOL_ROUNDS ) {
-            claude_chat_log_error(
+        if ( $round === cgClaudeChatMaxToolRounds ) {
+            fClaudeChatLogError(
                 'Tool Loop',
-                'Reached the ' . CLAUDE_CHAT_MAX_TOOL_ROUNDS . '-round cap; returning a partial answer.'
+                'Reached the ' . cgClaudeChatMaxToolRounds . '-round cap; returning a partial answer.'
             );
             break;
         }
 
-        if ( ( microtime( true ) - $started ) >= CLAUDE_CHAT_RESPONSE_BUDGET ) {
+        if ( ( microtime( true ) - $started ) >= cgClaudeChatResponseBudget ) {
             $timed_out = true;
-            claude_chat_log_error(
+            fClaudeChatLogError(
                 'Tool Loop',
-                'Response budget of ' . CLAUDE_CHAT_RESPONSE_BUDGET
+                'Response budget of ' . cgClaudeChatResponseBudget
                     . 's exhausted before round ' . ( $round + 1 ) . '.'
             );
             break;
@@ -796,7 +796,7 @@ function claude_chat_api_request( $message ) {
             /* Budget can run out partway through a batch of URLs. Remaining
                tool_use blocks still need a result, so return an error one
                instead of fetching. */
-            if ( ( microtime( true ) - $started ) >= CLAUDE_CHAT_RESPONSE_BUDGET ) {
+            if ( ( microtime( true ) - $started ) >= cgClaudeChatResponseBudget ) {
                 $timed_out          = true;
                 $result['content']  = 'Not fetched: the response time budget was exhausted. '
                                     . 'Answer with what you already have.';
@@ -815,12 +815,12 @@ function claude_chat_api_request( $message ) {
                 continue;
             }
 
-            $text = claude_chat_fetch_url( $url );
+            $text = fClaudeChatFetchUrl( $url );
 
             if ( $text === false || $text === '' ) {
                 /* Per spec: a fetch that fails or times out returns nothing. */
                 $result['content']  = 'Could not fetch ' . $url . ' (unreachable, blocked, non-200, '
-                                    . 'or timed out after ' . CLAUDE_CHAT_FETCH_TIMEOUT . 's). '
+                                    . 'or timed out after ' . cgClaudeChatFetchTimeOut . 's). '
                                     . 'Do not invent its contents.';
                 $result['is_error'] = true;
             } else {
@@ -840,12 +840,12 @@ function claude_chat_api_request( $message ) {
         $final_text = $timed_out
             ? 'Error: Timed out while retrieving linked pages. Please try again.'
             : 'Error: Unable to get a response from Claude API.';
-        claude_chat_log_error( 'Empty Response', $final_text );
+        fClaudeChatLogError( 'Empty Response', $final_text );
         return $final_text;
     }
 
     /* Log the user message and Claude response to claude_log.org. */
-    claude_chat_log_message( $message, $final_text );
+    fClaudeChatLogMessage( $message, $final_text );
 
     return $final_text;
 }
@@ -856,14 +856,14 @@ function claude_chat_api_request( $message ) {
    Deletes claude_log.org and claude.log, then redirects back to the
    settings page with a confirmation flag.
 */
-function claude_chat_clear_logs() {
+function fClaudeChatClearLogs() {
     if ( ! current_user_can('manage_options') ) {
         wp_die( esc_html__('Unauthorized', 'claude-chat') );
     }
-    check_admin_referer('claude_chat_clear_logs_action', 'claude_chat_clear_logs_nonce');
+    check_admin_referer('fClaudeChatClearLogs_action', 'fClaudeChatClearLogs_nonce');
 
     foreach ( array('claude_log.org', 'claude.log') as $log_file ) {
-        $path = claude_chat_get_log_path('claude', $log_file);
+        $path = fClaudeChatGetLogPath('claude', $log_file);
         if ( $path && file_exists($path) ) {
             wp_delete_file($path);
         }
@@ -876,23 +876,23 @@ function claude_chat_clear_logs() {
     ) );
     exit;
 }
-add_action('admin_post_claude_chat_clear_logs', 'claude_chat_clear_logs');
+add_action('admin_post_fClaudeChatClearLogs', 'fClaudeChatClearLogs');
 
 
 /* Add settings page */
-function claude_chat_settings_page() {
+function fClaudeChatSettingsPage() {
     add_options_page(
         'Claude Chat Settings',
         'Claude Chat',
         'manage_options',
         'claude-chat-settings',
-        'claude_chat_settings_page_html'
+        'fClaudeChatSettingsPage_html'
     );
 }
-add_action('admin_menu', 'claude_chat_settings_page');
+add_action('admin_menu', 'fClaudeChatSettingsPage');
 
 /* Settings page HTML */
-function claude_chat_settings_page_html() {
+function fClaudeChatSettingsPage_html() {
     $homeUrl = home_url();
 ?>
     <div class="wrap">
@@ -914,9 +914,9 @@ function claude_chat_settings_page_html() {
 
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>"
               style="margin-top:12px;">
-            <input type="hidden" name="action" value="claude_chat_clear_logs">
-            <?php wp_nonce_field('claude_chat_clear_logs_action', 'claude_chat_clear_logs_nonce'); ?>
-            <?php submit_button('Clear Logs', 'delete', 'claude_chat_clear_logs_submit', false);
+            <input type="hidden" name="action" value="fClaudeChatClearLogs">
+            <?php wp_nonce_field('fClaudeChatClearLogs_action', 'fClaudeChatClearLogs_nonce'); ?>
+            <?php submit_button('Clear Logs', 'delete', 'fClaudeChatClearLogs_submit', false);
             echo '<p>Before clearing the logs, they can be viewed at:<br>';
             echo '<a href="' . home_url('/wp-content/uploads/claude/claude_log.org') . '" target="_blank">';
             echo home_url('/wp-content/uploads/claude/claude_log.org') . '</a><br>';
@@ -930,18 +930,18 @@ function claude_chat_settings_page_html() {
 
 
 /* Initialize settings */
-function claude_chat_settings_init() {
+function fClaudeChatSettingsInit() {
     add_settings_section(
         'claude_chat_settings_section',
         'Claude API Settings',
-        'claude_chat_settings_section_callback',
+        'fClaudeChatSettingsSection',
         'claude-chat-settings'
     );
 
     add_settings_field(
         'claude_chat_api_key',
         'API Key',
-        'claude_chat_api_key_field_callback',   /* FIX: dedicated callback uses type="password" */
+        'fClaudeChatApiKeyFieldCallback',   /* FIX: dedicated callback uses type="password" */
         'claude-chat-settings',
         'claude_chat_settings_section',
         array('label_for' => 'claude_chat_api_key')
@@ -950,7 +950,7 @@ function claude_chat_settings_init() {
     add_settings_field(
         'claude_chat_model',
         'Model',
-        'claude_chat_model_dropdown_callback',
+        'fClaudeChatDropdownCallback',
         'claude-chat-settings',
         'claude_chat_settings_section',
         array('label_for' => 'claude_chat_model')
@@ -959,7 +959,7 @@ function claude_chat_settings_init() {
     add_settings_field(
         'claude_chat_temperature',
         'Temperature',
-        'claude_chat_number_field_callback',
+        'fClaudeChatNumberFieldCallback',
         'claude-chat-settings',
         'claude_chat_settings_section',
         array(
@@ -974,7 +974,7 @@ function claude_chat_settings_init() {
     add_settings_field(
         'claude_chat_max_tokens',
         'Max Tokens',
-        'claude_chat_number_field_callback',
+        'fClaudeChatNumberFieldCallback',
         'claude-chat-settings',
         'claude_chat_settings_section',
         array(
@@ -988,15 +988,15 @@ function claude_chat_settings_init() {
     add_settings_field(
         'claude_chat_follow_links',
         'Follow Links',
-        'claude_chat_checkbox_field_callback',
+        'fClaudeChatCheckboxFieldCallback',
         'claude-chat-settings',
         'claude_chat_settings_section',
         array(
             'label_for'   => 'claude_chat_follow_links',
             'description' => 'When checked, Claude may call the fetch_url tool to read URLs '
                            . 'named in the prompt or the user question. Each fetch times out after '
-                           . CLAUDE_CHAT_FETCH_TIMEOUT . 's; the whole fetch loop stops after '
-                           . CLAUDE_CHAT_RESPONSE_BUDGET . 's and answers with what it has. '
+                           . cgClaudeChatFetchTimeOut . 's; the whole fetch loop stops after '
+                           . cgClaudeChatResponseBudget . 's and answers with what it has. '
                            . 'Adds an API round trip per batch of fetches, so replies are slower and '
                            . 'cost more tokens.',
         )
@@ -1005,16 +1005,16 @@ function claude_chat_settings_init() {
     add_settings_field(
         'claude_chat_prefetch_urls',
         'List of pre-fetch URLs',
-        'claude_chat_textarea_field_callback',
+        'fClaudeChatTextareaFieldCallback',
         'claude-chat-settings',
         'claude_chat_settings_section',
         array(
             'label_for'   => 'claude_chat_prefetch_urls',
-            'description' => 'Optional. One URL per line, max ' . CLAUDE_CHAT_MAX_PREFETCH_URLS . '. '
+            'description' => 'Optional. One URL per line, max ' . cgClaudeChatMaxPreFetchUrls . '. '
                            . 'These are always fetched and added to the system prompt, whether or not '
                            . 'Follow Links is checked. Content is cached for '
-                           . intval( CLAUDE_CHAT_PREFETCH_TTL / 60 ) . ' minutes and truncated to '
-                           . number_format( CLAUDE_CHAT_MAX_FETCH_CHARS ) . ' characters per page. '
+                           . intval( cgClaudeChatPreFetchTtl / 60 ) . ' minutes and truncated to '
+                           . number_format( cgClaudeChatMaxFetchChars ) . ' characters per page. '
                            . 'Leave blank to disable.',
         )
     );
@@ -1022,19 +1022,19 @@ function claude_chat_settings_init() {
     add_settings_field(
         'claude_chat_prefix_prompt',
         'Prefix Prompt',
-        'claude_chat_textarea_field_callback',
+        'fClaudeChatTextareaFieldCallback',
         'claude-chat-settings',
         'claude_chat_settings_section',
         array(
             'label_for'   => 'claude_chat_prefix_prompt',
-            'description' => 'Optional. Sent as the system prompt on every request, keeping it separate from user input. Uses cache_control to save costs. Leave blank to disable. Max ' . number_format( CLAUDE_CHAT_MAX_PREFIX_PROMPT_BYTES ) . ' bytes.',
+            'description' => 'Optional. Sent as the system prompt on every request, keeping it separate from user input. Uses cache_control to save costs. Leave blank to disable. Max ' . number_format( cgClaudeChatMaxPrefixPrompt ) . ' bytes.',
         )
     );
 }
-add_action('admin_init', 'claude_chat_settings_init');
+add_action('admin_init', 'fClaudeChatSettingsInit');
 
 /* Field render callbacks */
-function claude_chat_settings_section_callback($args) {
+function fClaudeChatSettingsSection($args) {
     echo '<p>Version: mVerStr</p>';
     echo '<p>Enter your Claude API settings below:</p>';
     echo '<p>Click <a href="https://github.com/TurtleEngr/WP-Claude-Interface/blob/main/README.md" target="_blank">HERE</a> for help.</p>';
@@ -1042,7 +1042,7 @@ function claude_chat_settings_section_callback($args) {
 
 
 /* FIX: Render the API key as a password field so it is masked in the browser. */
-function claude_chat_api_key_field_callback($args) {
+function fClaudeChatApiKeyFieldCallback($args) {
     $option = get_option($args['label_for']);
     echo '<input type="password" id="'  . esc_attr($args['label_for'])
         . '" name="'                     . esc_attr($args['label_for'])
@@ -1054,7 +1054,7 @@ function claude_chat_api_key_field_callback($args) {
     }
 }
 
-function claude_chat_number_field_callback($args) {
+function fClaudeChatNumberFieldCallback($args) {
     $option = get_option($args['label_for']);
     echo '<input type="number" id="' . esc_attr($args['label_for'])
         . '" name="'                  . esc_attr($args['label_for'])
@@ -1077,7 +1077,7 @@ function claude_chat_number_field_callback($args) {
   without it the Settings API never sees the key, the option keeps its old
   value, and the box would appear impossible to turn off.
 */
-function claude_chat_checkbox_field_callback($args) {
+function fClaudeChatCheckboxFieldCallback($args) {
     $option = get_option($args['label_for'], '');
     echo '<input type="hidden" name="' . esc_attr($args['label_for']) . '" value="0">';
     echo '<input type="checkbox" id="' . esc_attr($args['label_for'])
@@ -1090,12 +1090,12 @@ function claude_chat_checkbox_field_callback($args) {
 }
 
 
-function claude_chat_model_dropdown_callback($args) {
+function fClaudeChatDropdownCallback($args) {
     $selected_model = get_option($args['label_for']);
     echo '<select id="'   . esc_attr($args['label_for'])
         . '" name="'       . esc_attr($args['label_for'])
         . '" class="regular-text">';
-    foreach (CLAUDE_MODELS as $model_key => $model_name) {
+    foreach (cgClaudeChatModels as $model_key => $model_name) {
         $selected = ($selected_model == $model_key) ? 'selected="selected"' : '';
         echo '<option value="' . esc_attr($model_key) . '" ' . $selected . '>'
             . esc_html($model_name) . '</option>';
@@ -1107,7 +1107,7 @@ function claude_chat_model_dropdown_callback($args) {
 }
 
 
-function claude_chat_textarea_field_callback($args) {
+function fClaudeChatTextareaFieldCallback($args) {
     $option = get_option($args['label_for'], '');
     echo '<textarea id="'   . esc_attr($args['label_for'])
         . '" name="'         . esc_attr($args['label_for'])
