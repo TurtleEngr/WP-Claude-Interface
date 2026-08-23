@@ -36,7 +36,7 @@ tag :
 	git tag -f ver-$(mVerStr)
 
 release : tag
-	'rsync' -aP readme.txt claude-chat-interface-$(mVerStr).zip $(mReleaseDir)
+	'rsync' -aP readme.txt pkg/claude-chat-interface-$(mVerStr).zip $(mReleaseDir)
 
 clean :
 	-find . -type f -name '*~' -exec rm {} \;
