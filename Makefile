@@ -16,7 +16,9 @@ mDistList = \
 	dist/claude-chat-interface/readme.txt \
 	dist/claude-chat-interface/LICENSE
 
-mReleaseDir = moria.whyayh.com:/rel/released/software/own/claude-chat-interface
+mServer = moria.whyayh.com
+mPubDev = /rel/development/software/own/$(mProj)
+mPubRel = /rel/released/software/own/$(mProj)
 
 # ----------
 # Main Targets
@@ -24,8 +26,8 @@ mReleaseDir = moria.whyayh.com:/rel/released/software/own/claude-chat-interface
 usage :
 	@echo "Usage:"
 	@echo "build - build dist/ with dirs and files to be installed"
-	@echo "package - create plugin install zip file"
-	@echo "release - copy zip files to release area"
+	@echo "save - create plugin install zip file, and cp to development"
+	@echo "publish - copy zip files to release area"
 	@echo "clean - rm tmp files"
 	@echo "dist-clean - clean and remove tmp dirs"
 
@@ -33,17 +35,27 @@ update :
 	git co develop
 	git pull --tags origin develop
 
-build : clean dist/claude-chat-interface $(mDistList)
-	sed -E -i "s;version-[0-9]+(\.[0-9]+){1,3}-orange;version-$$(cat VERSION)-orange;" README.md
+build : clean README.md $(mProduct)
+	@echo 'If OK, make save'
 
-package : build
-	cd dist; zip -r claude-chat-interface-$$(cat ../VERSION)).zip claude-chat-interface
+save development : update incPatch build
+	git ci -am Updated
+	git push origin develop
+	-ssh $(mServer) mkdir -p $(mPubDev)
+	rsync -a README.org readme.txt claude-chat-interface-$$(cat VERSION).zip $(mServer):$(mPubDev)
+	@echo 'If OK, make publish'
 
-tag :
-	git tag -f ver-$$(cat VERSION)
-
-release : tag
-	'rsync' -aP readme.txt dist/claude-chat-interface-$$(cat VERSION).zip $(mReleaseDir)
+publish release : incMinor save
+	git tag -f "ver-$$(cat VERSION)"
+	git push --tags origin develop
+	git co main
+	git pull --tags origin main
+	git merge develop
+	git push --tags origin main
+	git co develop
+	-ssh $(mServer) mkdir -p $(mPubRel)
+	rsync -a README.org readme.txt claude-chat-interface-$$(cat VERSION).zip $(mServer):$(mPubRel)
+	@echo 'If done, make dist-clean'
 
 clean :
 	-find . -type f -name '*~' -exec rm {} \;
@@ -55,9 +67,15 @@ dist-clean : clean
 # ----------
 # Work Targets
 
-$(mProduct) : dist/claude-chat-interface $(mBuildList)
-	-rm $@
+$(mProduct) : $(mBuildList)
 	cd dist; zip -r claude-chat-interface-$$(cat VERSION).zip claude-chat-interface
+	-touch $@
+
+README.md : README.org
+	pandoc -f org -t markdown <$? >$@
+	sed -i "s/VERSION/$$(cat VERSION)/" $@
+	sed -i 's/^\[version]/![version]/' $@
+	sed -i 's/^\[WordPress]/![WordPress]/' $@
 
 # ----------
 # Single Targets
@@ -71,6 +89,7 @@ incPatch : VERSION
 incMinor : VERSION
 	incver.sh -m
 
+# Manually run
 incMajor : VERSION
 	incver.sh -M
 
@@ -93,4 +112,7 @@ dist/claude-chat-interface/claude3.png : claude3.png
 	cp $? $@
 
 dist/claude-chat-interface/claude_set.png : claude_set.png
+	cp $? $@
+
+dist/claude-chat-interface/LICENSE : LICENSE
 	cp $? $@
