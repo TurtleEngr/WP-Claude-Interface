@@ -89,14 +89,14 @@ README.md : README.org VERSION
 	sed -i 's/^\[WordPress]/![WordPress]/' $@
 
 check-dev :
-	if diff -q VERSION VERSION-dev; then \
+	if diff -q VERSION VERSION-dev >/dev/null 2>&1; then \
 		echo "Development versions must be different."; \
 		echo "increment and rebuild."; \
 		exit 1; \
 	fi
 
 check-rel :
-	if diff -q VERSION VERSION-rel; then \
+	if diff -q VERSION VERSION-rel >/dev/null 2>&1; then \
 		echo "Released versions must be different."; \
 		echo "increment and rebuild."; \
 		exit 1; \
