@@ -4,6 +4,7 @@
  * Plugin URI: https://github.com/TurtleEngr/WP-Claude-Interface/tree/main
  * Description: Adds a Claude AI chat interface to your WordPress site using a shortcode.
  * Version: VERSION
+ * Text Domain: claude
  * Author: Volkan Kücükbudak, enh: TurtleEngr
  */
 
@@ -207,7 +208,7 @@ function fClaudeChatSanitizePreFetchUrls( $value ) {
 /* Enqueue necessary scripts and styles */
 function fClaudeChatEnqueueScripts() {
     wp_enqueue_style('claude-chat-style', plugin_dir_url(__FILE__) . 'css/claude-chat.css');
-    wp_enqueue_script('claude-chat-script', plugin_dir_url(__FILE__) . 'js/claude-chat.js', array('jquery'), 'mVerStr', true);
+    wp_enqueue_script('claude-chat-script', plugin_dir_url(__FILE__) . 'js/claude-chat.js', array('jquery'), 'VERSION', true);
     wp_localize_script('claude-chat-script', 'claudeChat', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce'    => wp_create_nonce('claude-chat-nonce'),
@@ -222,7 +223,7 @@ function fClaudeChatShortCode() {
     <div id="claude-chat-interface">
         <div id="claude-chat-messages"></div>
         <textarea id="claude-chat-input" placeholder="Ask Claude something..." rows="3"></textarea>
-        <button id="claude-chat-submit">Send</button> (Claude Chat Version: mVerStr)
+        <button id="claude-chat-submit">Send</button> (Version: VERSION)
     </div>
     <?php
     return ob_get_clean();
@@ -465,7 +466,7 @@ function fClaudeChatFetchUrl( $url ) {
             'timeout'             => cgClaudeChatFetchTimeOut,
             'redirection'         => 3,
             'limit_response_size' => cgClaudeChatMaxFetchBytes,
-            'user-agent'          => 'WP-Claude-Interface/mVerStr',
+            'user-agent'          => 'WP-Claude-Interface/VERSION',
         ) );
 
     if ( is_wp_error( $response ) ) {
@@ -1060,9 +1061,9 @@ add_action('admin_init', 'fClaudeChatSettingsInit');
 
 /* Field render callbacks */
 function fClaudeChatSettingsSection($args) {
-    echo '<p>Version: mVerStr</p>';
-    echo '<p>Enter your Claude API settings below:</p>';
+    echo '<p>Version: VERSION</p>';
     echo '<p>Click <a href="https://github.com/TurtleEngr/WP-Claude-Interface/blob/main/README.md" target="_blank">HERE</a> for help.</p>';
+    echo '<p>Enter your Claude API settings below:</p>';
 }
 
 /* Render the API key as a password field so it is masked in the

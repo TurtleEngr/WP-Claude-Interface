@@ -1,16 +1,14 @@
 
 === Claude Chat Interface ===
+Description: This Claude Chat Interface integrates the Claude AI chat interface into your WordPress site using a shortcode.
 Contributors: aicodecraft, turtle-engr
 Donate link: https://aicodecraft.io/donate
 Tags: chat, AI, Claude, WordPress
-Requires at least: 5.0
-Tested up to: 6.9.4
+Requires at least: 6.0
+Tested up to: 7.1
 Stable tag: VERSION
 License: DBAD
 License URI: https://dbad-license.org/
-
-This Claude Chat Interface integrates the Claude AI chat interface
-into your WordPress site using a shortcode.
 
 == Description ==
 
@@ -19,22 +17,11 @@ chat interface into your WordPress website. You can easily configure
 the plugin via the WordPress admin panel and use a shortcode to embed
 the chat interface anywhere on your site.
 
-== Installation ==
+How do I display the chat interface?  Use the shortcode
+`[claude_chat]` to display the chat interface on any page or post.
 
-1. With the Plugins menu, upload claude-chat-interface-VERSION.zip
-2. Install and activate.
-3. Navigate to 'Settings' > 'Claude Chat' to configure your API settings.
-
-== Frequently Asked Questions ==
-
-= How do I display the chat interface? =
-
-Use the shortcode `[claude_chat]` to display the chat interface on any
-page or post.
-
-= Where do I get the API key? =
-
-You need to register with Claude AI to obtain your API key.
+Where do I get the API key?  You need to register with Claude AI
+account to get your API key.
 
 == Screenshots ==
 
@@ -43,6 +30,12 @@ You need to register with Claude AI to obtain your API key.
 
 2. Chat interface displayed on a WordPress page.
    ![Claude 3 WordPress Plugin](claude3.png)
+
+== Installation ==
+
+1. With the Plugins menu, upload claude-chat-interface-VERSION.zip
+2. Install and activate.
+3. Navigate to 'Settings' > 'Claude Chat' to configure your API settings.
 
 == Changelog ==
 
