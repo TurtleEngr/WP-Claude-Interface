@@ -29,6 +29,7 @@ usage :
 	@echo "Usage:"
 	@echo "build - build dist/ with dirs and files to be installed"
 	@echo "incPatch, incMinor, or incMajor - before save or publish"
+	@echo "    Update Changelog in readme.txt"
 	@echo "save - create plugin install zip file, and cp to development"
 	@echo "publish - copy zip files to release area"
 	@echo "clean - rm tmp files"
