@@ -78,6 +78,7 @@ dist-clean : clean
 # Work Targets
 
 $(mProduct) : $(mBuildList)
+	php -l claude.php
 	cd dist; zip -r claude-chat-interface-$$(cat ../VERSION).zip claude-chat-interface
 	-touch $@
 
