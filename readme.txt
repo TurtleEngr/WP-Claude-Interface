@@ -46,6 +46,9 @@ You need to register with Claude AI to obtain your API key.
 
 == Changelog ==
 
+= 2.5.0 =
+* Cleaned up build process.
+
 = 2.3 =
 * Put version number on pages.
 
