@@ -1,8 +1,7 @@
 # Claude Chat Interface (WordPress Plugin)
 
-[version](https://img.shields.io/badge/version-2.3-orange.svg)
-
-[WordPress](https://img.shields.io/badge/WordPress-Compatible-blue.svg)
+![version](https://img.shields.io/badge/version-2.3-orange.svg)
+![WordPress](https://img.shields.io/badge/WordPress-Compatible-blue.svg)
 
 Integrate the Claude AI chat interface into your WordPress website using
 a simple shortcode.
