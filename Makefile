@@ -6,7 +6,7 @@ SHELL := /bin/bash
 mProj = WP-Claude-Interface
 mProduct = dist/claude-chat-interface-VERSION.zip
 
-mDistList = \
+mBuildList = \
 	dist/claude-chat-interface \
 	dist/claude-chat-interface/css \
 	dist/claude-chat-interface/js \
@@ -38,7 +38,7 @@ update :
 build : clean README.md $(mProduct)
 	@echo 'If OK, make save'
 
-save development : update incPatch build
+save development : incPatch update build
 	git ci -am Updated
 	git push origin develop
 	-ssh $(mServer) mkdir -p $(mPubDev)
@@ -68,7 +68,7 @@ dist-clean : clean
 # Work Targets
 
 $(mProduct) : $(mBuildList)
-	cd dist; zip -r claude-chat-interface-$$(cat VERSION).zip claude-chat-interface
+	cd dist; zip -r claude-chat-interface-$$(cat ../VERSION).zip claude-chat-interface
 	-touch $@
 
 README.md : README.org

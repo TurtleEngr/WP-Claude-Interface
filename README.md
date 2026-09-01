@@ -48,6 +48,8 @@ a simple shortcode.
 
 ## Build/Install
 
+Source: <https://github.com/TurtleEngr/WP-Claude-Interface>
+
 1.  Clone this repo
 2.  Or click on the lastest \"tag,\" select the \"Source code\" link to
     download the zip file, then unzip the file.
