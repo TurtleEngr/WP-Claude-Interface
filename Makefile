@@ -28,26 +28,30 @@ mPubRel = /rel/released/software/own/$(mProj)
 usage :
 	@echo "Usage:"
 	@echo "build - build dist/ with dirs and files to be installed"
+	@echo "incPatch, incMinor, or incMajor - before save or publish"
 	@echo "save - create plugin install zip file, and cp to development"
 	@echo "publish - copy zip files to release area"
 	@echo "clean - rm tmp files"
-	@echo "dist-clean - clean and remove tmp dirs"
+	@echo "dist-clean - clean and remove dist dir"
 
 update :
 	git co develop
 	git pull origin develop
 
-build : clean README.md $(mProduct)
+build : clean update README.md $(mProduct)
 	@echo 'If OK, make save'
 
-save development : incPatch update build
+save development : check-dev
 	git ci -am Updated
 	git push origin develop
 	-ssh $(mServer) mkdir -p $(mPubDev)
 	rsync -a README.org readme.txt dist/claude-chat-interface-$$(cat VERSION).zip $(mServer):$(mPubDev)
+	cp VERSION VERSION-dev
+	git ci -am Updated
+	git push origin develop
 	@echo 'If OK, make publish'
 
-publish release : incMinor build
+publish release : check-rel
 	git ci -am Updated
 	git tag -f "ver-$$(cat VERSION)"
 	git push --tags origin develop
@@ -58,6 +62,9 @@ publish release : incMinor build
 	git co develop
 	-ssh $(mServer) mkdir -p $(mPubRel)
 	rsync -a README.org readme.txt dist/claude-chat-interface-$$(cat VERSION).zip $(mServer):$(mPubRel)
+	cp VERSION VERSION-rel
+	git ci -am Updated
+	git push origin develop
 	@echo 'If done, make dist-clean'
 
 clean :
@@ -80,6 +87,20 @@ README.md : README.org VERSION
 	sed -i 's/^\[version]/![version]/' $@
 	sed -i 's/^\[WordPress]/![WordPress]/' $@
 
+check-dev :
+	if ! diff -q VERSION VERSION-dev; then \
+		echo "Development versions must be different."; \
+		echo "increment and rebuild."; \
+		exit 1; \
+	fi
+
+check-rel :
+	if ! diff -q VERSION VERSION-rel; then \
+		echo "Released versions must be different."; \
+		echo "increment and rebuild."; \
+		exit 1; \
+	fi
+
 # ----------
 # Single Targets
 
@@ -92,7 +113,6 @@ incPatch : VERSION
 incMinor : VERSION
 	incver.sh -m
 
-# Manually run
 incMajor : VERSION
 	incver.sh -M
 
