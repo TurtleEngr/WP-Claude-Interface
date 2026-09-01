@@ -33,7 +33,7 @@ usage :
 
 update :
 	git co develop
-	git pull --tags origin develop
+	git pull origin develop
 
 build : clean README.md $(mProduct)
 	@echo 'If OK, make save'
