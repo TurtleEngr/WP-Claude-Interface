@@ -45,7 +45,8 @@ save development : incPatch update build
 	rsync -a README.org readme.txt dist/claude-chat-interface-$$(cat VERSION).zip $(mServer):$(mPubDev)
 	@echo 'If OK, make publish'
 
-publish release : incMinor save
+publish release : incMinor build
+	git ci -am Updated
 	git tag -f "ver-$$(cat VERSION)"
 	git push --tags origin develop
 	git co main
