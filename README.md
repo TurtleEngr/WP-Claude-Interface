@@ -2,7 +2,8 @@
 ![Version](https://img.shields.io/badge/version-2.3-orange.svg)
 ![WordPress](https://img.shields.io/badge/WordPress-Compatible-blue.svg)
 
-Integrate the Claude AI chat interface into your WordPress website using a simple shortcode.
+Integrate the Claude AI chat interface into your WordPress website
+using a simple shortcode.
 
 ## Claude Models
 
@@ -16,10 +17,18 @@ Integrate the Claude AI chat interface into your WordPress website using a simpl
 
 ## Features
 
-- **Easy Integration**: Use a shortcode to seamlessly integrate the Claude AI chat interface into your WordPress site.
-- **Admin Settings**: Configure API settings directly from the WordPress admin panel.
-- **Customizable Interface**: Modify the chat interface appearance and behavior with ease.
-- **Claude API Support**: Full support for Claude API parameters such as temperature, max tokens, and more.
+- **Easy Integration**: Use a shortcode to seamlessly integrate the
+    Claude AI chat interface into your WordPress site.
+
+- **Admin Settings**: Configure API settings directly from the
+    WordPress admin panel.
+
+- **Customizable Interface**: Modify the chat interface appearance and
+    behavior with ease.
+
+- **Claude API Support**: Full support for Claude API parameters such
+    as temperature, max tokens, and more.
+
 - **AJAX-Based**: Smooth, responsive chat experience powered by AJAX.
 
 ## Install Zip File
@@ -54,10 +63,12 @@ Go to 'Settings' > 'Claude Chat' in the WordPress admin panel to configure the f
 
 - **API Key**: Enter your Claude API key.
 - **Model**: Select the Claude model you wish to use.
-- **Temperature**: Adjust the randomness of responses (value between 0.0 and 1.0).
+- **Temperature**: Adjust the randomness of responses (value between
+    0.0 and 1.0).
 - **Max Tokens**: Set the maximum number of tokens for the response.
 - **Follow Links**: Checkbox. If checked URLs in the prompts will be followed.
-- **List of pre-fetch URLs**: One URL per line. Each URL will be read and added to the prompts.
+- **List of pre-fetch URLs**: One URL per line. Each URL will be read
+    and added to the prompts.
 - **Prefix Prompt**: Define a prompt that will be put before the user's prompt.
 - **Save Setting** button: Save the current settings.
 - **Clear Logs** button: the chat and error logs will be cleared
@@ -91,9 +102,10 @@ Chat Settings admin form.
 - **cgClaudeChatMaxResponseBytes**: 4 MB
 - **cgClaudeChatMaxLogDumpChars**: 4 KB
 - **cgClaudeChatMaxPrefixPrompt**: 65 KB
-
-- **Styling**: Customize the chat interface by editing the `css/claude-chat.css` file.
-- **JavaScript**: Add or modify functionality by editing the `js/claude-chat.js` file.
+- **Styling**: Customize the chat interface by editing the
+    `css/claude-chat.css` file.
+- **JavaScript**: Add or modify functionality by editing the
+    `js/claude-chat.js` file.
 
 ## Enhancements
 
@@ -174,7 +186,7 @@ is needed.
 
 
 #### Settings
-![Claude 3 WordPress Pöugin](claude_set.png)
+![Claude 3 WordPress Plugin](claude_set.png)
 
 - API Key - Put your Claude API key here
 - Model - Pick the model you want
