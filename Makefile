@@ -42,7 +42,7 @@ save development : incPatch update build
 	git ci -am Updated
 	git push origin develop
 	-ssh $(mServer) mkdir -p $(mPubDev)
-	rsync -a README.org readme.txt claude-chat-interface-$$(cat VERSION).zip $(mServer):$(mPubDev)
+	rsync -a README.org readme.txt dist/claude-chat-interface-$$(cat VERSION).zip $(mServer):$(mPubDev)
 	@echo 'If OK, make publish'
 
 publish release : incMinor save
@@ -54,7 +54,7 @@ publish release : incMinor save
 	git push --tags origin main
 	git co develop
 	-ssh $(mServer) mkdir -p $(mPubRel)
-	rsync -a README.org readme.txt claude-chat-interface-$$(cat VERSION).zip $(mServer):$(mPubRel)
+	rsync -a README.org readme.txt dist/claude-chat-interface-$$(cat VERSION).zip $(mServer):$(mPubRel)
 	@echo 'If done, make dist-clean'
 
 clean :
