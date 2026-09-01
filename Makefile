@@ -72,8 +72,8 @@ $(mProduct) : $(mBuildList)
 	cd dist; zip -r claude-chat-interface-$$(cat ../VERSION).zip claude-chat-interface
 	-touch $@
 
-README.md : README.org
-	pandoc -f org -t markdown <$? >$@
+README.md : README.org VERSION
+	pandoc -f org -t markdown <README.org >$@
 	sed -i "s/VERSION/$$(cat VERSION)/" $@
 	sed -i 's/^\[version]/![version]/' $@
 	sed -i 's/^\[WordPress]/![WordPress]/' $@
