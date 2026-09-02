@@ -242,7 +242,7 @@ on the GitHub repository.
 
 ** License
 
-This plugin is licensed under the DBAD License.
+This plugin is licensed under the [[https://dbad-license.org/][DBAD License]]
 
 ** Copyright
 

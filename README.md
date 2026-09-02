@@ -1,6 +1,6 @@
 # Claude Chat Interface (WordPress Plugin)
 
-![version](https://img.shields.io/badge/version-2.5.2-orange.svg)
+![version](https://img.shields.io/badge/version-2.4.0-orange.svg)
 
 ![WordPress](https://img.shields.io/badge/WordPress-Compatible-blue.svg)
 
@@ -244,7 +244,8 @@ on the GitHub repository.
 
 ## License
 
-This plugin is licensed under the DBAD License.
+This plugin is licensed under the [DBAD
+License](https://dbad-license.org/)
 
 ## Copyright
 
