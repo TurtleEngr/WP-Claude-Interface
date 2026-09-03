@@ -71,7 +71,7 @@
 + If people ask how they can submit things or contribute to the site,
   point them to the page: https://indivisiblepv.info/grow-the-site/
 
-+ If someone asks, where are the forms for making posts or conntacting the webmaster.
++ If someone asks, where are the forms for making posts or contacting the webmaster.
   point them to the page: https://indivisiblepv.info/grow-the-site/
 
 + If a person asks about meetings or events,
@@ -130,9 +130,9 @@
 ** Reasons for the some of the "quirky" prompts
 
 + AI tends to return "average" answers. We want it to give some
-  alternatives that are not the best averate answer. The following
+  alternatives that are not the best average answer. The following
   prompts makes it return other matches. This has the added advantage
-  of causing user's to question the answers--to engauge critical
+  of causing user's to question the answers--to engage critical
   thinking. "Huh, why three answers that look different?"
   + *Your response should include three different alternative answers.*
   + *Define the confidence percentage for each answer.*
