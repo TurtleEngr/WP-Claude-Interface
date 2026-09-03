@@ -48,12 +48,12 @@ save development : check-dev
 	-ssh $(mServer) mkdir -p $(mPubDev)
 	rsync -a README.org readme.txt dist/claude-chat-interface-$$(cat VERSION).zip $(mServer):$(mPubDev)
 	cp VERSION VERSION-dev
-	git ci -am Updated
+	-git ci -am Updated
 	git push origin develop
 	@echo 'If OK, make publish'
 
 publish release : check-rel
-	git ci -am Updated
+	-git ci -am Updated
 	git tag -f "ver-$$(cat VERSION)"
 	git push --tags origin develop
 	git co main
@@ -64,7 +64,7 @@ publish release : check-rel
 	-ssh $(mServer) mkdir -p $(mPubRel)
 	rsync -a README.org readme.txt dist/claude-chat-interface-$$(cat VERSION).zip $(mServer):$(mPubRel)
 	cp VERSION VERSION-rel
-	git ci -am Updated
+	-git ci -am Updated
 	git push origin develop
 	@echo 'If done, make dist-clean'
 
