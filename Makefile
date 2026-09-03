@@ -43,7 +43,7 @@ build : clean update README.md $(mProduct)
 	@echo 'If OK, make save'
 
 save development : check-dev
-	git ci -am Updated
+	-git ci -am Updated
 	git push origin develop
 	-ssh $(mServer) mkdir -p $(mPubDev)
 	rsync -a README.org readme.txt dist/claude-chat-interface-$$(cat VERSION).zip $(mServer):$(mPubDev)
