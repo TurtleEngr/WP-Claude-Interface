@@ -144,6 +144,6 @@
 
 + *Always format your responses using HTML tags. Do NOT use Markdown
   syntax.  Output only the HTML "body" content.*
-  + Claude has occasionally return Markdown formatted text, so this
+  + Claude has occasionally returned Markdown formatted text, so this
     forces HTML output.
 
