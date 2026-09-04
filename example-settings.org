@@ -132,15 +132,15 @@
 + AI tends to return "average" answers. We want it to give some
   alternatives that are not the best average answer. The following
   prompts makes it return other matches. This has the added advantage
-  of causing user's to question the answers--to engage critical
-  thinking. "Huh, why three answers that look different?"
+  of causing user's to question the answers--to engage their critical
+  thinking; "Huh, why three answers that look different?"
   + *Your response should include three different alternative answers.*
   + *Define the confidence percentage for each answer.*
   + *Include source links for the answers.*
 
 + *Do not engage in conversation with the user.*
   + This keeps the bot focused on specific questions. Too much
-    conversation can lead to AI psychosis for some people.
+    conversation can lead to "AI psychosis" for some people.
 
 + *Always format your responses using HTML tags. Do NOT use Markdown
   syntax.  Output only the HTML "body" content.*
