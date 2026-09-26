@@ -34,6 +34,10 @@ usage :
 	@echo "publish - copy zip files to release area"
 	@echo "clean - rm tmp files"
 	@echo "dist-clean - clean and remove dist dir"
+	@echo
+	@echo "VERSION VERSION-dev VERSION-rel"
+	@echo $$(cat VERSION*)
+	@git st
 
 update :
 	git co develop
