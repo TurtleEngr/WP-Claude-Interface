@@ -1,0 +1,244 @@
+* Prompt
+** CVS
+- $Revision: 1.4 $ $Date: 2026/08/26 01:44:02 $
+  
+** Prompt 1
+
+Given the WordPress plugin code at:
+https://github.com/TurtleEngr/WP-Claude-Interface
+and the prompt at file: sample-prompt.org
+
+Why the Claude API not follow and read any of the supplied links in
+the prompt? Is there a way force it to read the links?
+
+*** Response
+
+- Looking at the plugin code and the README, the answer comes down to
+  how the plugin calls the API, not anything about `sample-prompt.org`
+  itself.
+
+## Why the links aren't being followed
+
+- The plugin (`claude.php` → `claude_chat_api_request()`) does a plain
+  call to `/v1/messages`:
+
+- It sends a **system/prefix prompt** (your `sample-prompt.org`
+  content) plus the user's message.
+- It uses `cache_control: ephemeral` on the prefix (that's just prompt caching — it makes repeated calls cheaper/faster, it does **not** give the model any capability).
+- Nowhere in the README or the described request flow is a `tools`
+  array being sent.
+
+- The raw Messages API is a text-in/text-out completion
+  endpoint. Claude has no ability to reach out to the internet unless
+  the request explicitly includes a **tool** that can do that —
+  e.g. Anthropic's hosted `web_search` tool, a `web_fetch`-style tool,
+  or a custom tool you implement yourself. Without that, a URL in the
+  prompt (like `https://indivisiblepv.info/...`) is just a string of
+  characters to the model. It can talk *about* the URL, guess at what
+  might be there from its training data, or fabricate
+  plausible-sounding content — but it never actually retrieves the
+  live page. That's exactly the failure mode your prompt is hitting:
+  the instructions repeatedly say "use the IPV site," "list the links
+  you used," etc., but the model has no mechanism to go get that
+  content.
+
+- This is also unrelated to the `Prefix Prompt` / cache_control
+  feature added in the plugin — that only affects caching of the
+  *text* of the prompt, not whether Claude can browse.
+
+## How to force it to actually read the links
+
+- You have two real options, and both require modifying `claude.php`,
+  since the WordPress plugin as described has no tool-calling logic at
+  all:
+
+1. **Add Anthropic's hosted web search tool** to the API request body:
+```php
+'tools' => [
+    [
+        'type' => 'web_search_20250305',
+        'name' => 'web_search'
+    ]
+]
+```
+- This lets Claude search the web and read pages on its own, but it's
+  a *search* tool — it won't reliably force it to fetch one specific
+  URL you name; it decides when/what to search.
+
+2. **Write a custom "fetch_url" tool** (more reliable for your use
+   case, since you want specific known pages read every time):
+   - Define a tool schema like `{name: "fetch_page", input_schema:
+     {url: string}}`.
+   - When Claude responds with a `tool_use` block requesting that
+     tool, your PHP code does a server-side `curl`/`wp_remote_get()`
+     on the URL, strips it to text, and sends it back as a
+     `tool_result` in a **second** API call.
+   - This requires turning the plugin's single request/response flow
+     into a small loop: send message → check if response contains
+     `tool_use` → execute → send `tool_result` back → get final
+     answer. Right now the plugin only does one round-trip.
+
+- Given your prompt explicitly hard-codes specific URLs
+  (categories/tags page, list-all-posts page, voteriders page, etc.),
+  option 2 is the more dependable fix — you can even have the plugin
+  pre-fetch a couple of the "always relevant" pages (like
+  `categories-and-tags` and `list-all-posts`) on every request and
+  inject their content directly into the system prompt, without
+  needing tool-use round trips at all. That's simpler to implement in
+  PHP and guarantees the model always has that context, rather than
+  hoping it decides to call a tool.
+
+- One caveat either way: this adds latency and token cost per request,
+  and with `Temp: 0.1` / `Max Tokens: 8000` already set, you'll want
+  to budget tokens carefully since fetched page content competes with
+  your existing prefix prompt for context space.
+
+** Prompt 2
+- Use Opus model
+- Major version change 2.0.0
+- branch: fetch-url
+
+*** Added a custom "fetch_url" tool to the existing code.
+
++ Follow the directions in CLAUDE.md, and the sample-prompt.org file can
+  be used as an example system prompt.
+  The code can be found at: https://github.com/TurtleEngr/WP-Claude-Interface
+
++ Added a custom "fetch_url" tool specification:
+  + Define a tool schema like `{name: "fetch_page", input_schema:
+    {url: string}}`.
+  + When Claude responds with a `tool_use` block requesting that tool,
+    your PHP code does a server-side `curl`/`wp_remote_get()` on the
+    URL, strips it to text, and sends it back as a `tool_result` in a
+    **second** API call.
+  + This requires turning the plugin's single request/response flow
+    into a small loop: send message, check if response contains
+    "tool_use" i.e. a URL, execute (for each URL), send "tool_result"
+    back, get final answer. Right now the plugin only does one
+    round-trip.
+  + The above process will only be "active" if the "Follow Links"
+    checkbox has been checked.
+    
++ Added a checkbox "Follow Links" to the claude-chat-settings page
+  (put it after the "Max Tokens" field).
+  
++ Add a "List of pre-fetch URLs" text box to the claude-chat-settings
+  page (put it after the "Follow Links" checkbox). This will be a list
+  of URLs, one per line, that will be pre-fetched and cached. The URLs
+  will always be pre-fetched (i.e., ignore the "Follow Links"
+  check-box).  If the text box is empty, no pre-fetching will be done.
+
++ If the system or user prompt is directed to list or read a URL, and
+  the "Follow Links" check-box has been checked, then call the
+  fetch_url tool to fetch and use the content from each URL.
+
++ Timeout configuration variables for the fetch_url tool.
+  + If a URL fetch takes more than cFetchN seconds, terminate the
+    call, and return nothing.  Default: cFetchN=5
+  + If the tool_use loop takes more than cResponseN seconds, then stop
+    processing and return with what you have so far.  Default:
+    cResponseN=20
+
++ Return the modified code as complete files, not patches.
+
+** Prompt 2 Response
+
+- Code file: doc-WP-Claude-Interface/result/custom-fetch-tool_claude.php
+
+- Before the code — three things I need to flag, per CLAUDE.md §1.
+
+- **Ambiguity I resolved by picking:** your spec says the tool is
+  `fetch_url` in the prose but `{name: "fetch_page"}` in the schema
+  example. I used **`fetch_url`** throughout. Change one string if you
+  meant the other.
+
+- **Naming:** `cFetchN`/`cResponseN` don't match the file's existing
+  `define('CLAUDE_CHAT_*')` convention, so I used constants and mapped
+  them explicitly in comments (`CLAUDE_CHAT_FETCH_TIMEOUT` = cFetchN,
+  `CLAUDE_CHAT_RESPONSE_BUDGET` = cResponseN).
+
+- **Security decision you should agree with:** letting the model name
+  arbitrary URLs that your server then fetches is server-side request
+  forgery. On a public-facing chat, a visitor can ask for
+  `http://169.254.169.254/…` or `http://localhost:3306`. I used
+  `wp_safe_remote_get()` + `wp_http_validate_url()`, which blocks
+  loopback and private ranges by default. That's the cheap mitigation,
+  not the strong one — the strong one is a hostname allow-list
+  (e.g. only `indivisiblepv.info`). I did **not** add an allow-list
+  because you didn't ask for one, but I think you should want it.
+
+- Plan I followed:
+```
+1. Add options + two settings fields → verify: fields render, values
+   persist
+2. Add fetch_url helper + HTML→text → verify: returns text, honors
+   timeout/size caps
+3. Add prefetch block (transient) → verify: cached, independent of
+   Follow Links
+4. Convert single round-trip to loop → verify: tool_result pairing,
+   budget breaks out
+```
+
+- Let me write it.Only `claude.php` changed — `js/claude-chat.js` and
+  `css/claude-chat.css` need no edits, since the loop is entirely
+  server-side and the two new admin fields use core WordPress classes.
+
+**What changed**
+
+- `claude_chat_api_request()` was split: `claude_chat_api_send()` does
+  one round trip, and `claude_chat_api_request()` wraps it in the
+  loop. Six new functions (`fetch_url`, `html_to_text`,
+  `get_prefetch_block`, `fetch_url_tool_spec`, `collect_text`,
+  `checkbox_field_callback`) plus two sanitize callbacks. Field order
+  on the settings page is now API Key → Model → Temperature → Max
+  Tokens → **Follow Links** → **List of pre-fetch URLs** → Prefix
+  Prompt.
+
+**Decisions worth your review**
+
+- `cache_control` moved from the prefix-prompt block to whichever
+  system block is *last*. With no pre-fetch list configured that's the
+  same block as before, so existing behavior is unchanged — but it
+  means pre-fetched content is inside the cached prefix, which is what
+  you want given it's stable for an hour.
+
+- The old code read `$data['content'][0]['text']`. That breaks the
+  moment tools are on, because block 0 is usually the
+  `tool_use`. `claude_chat_collect_text()` gathers by type
+  instead. This is a real bug my change would have introduced if left
+  alone, not unrelated cleanup.
+
+- Every `tool_use` block must get a `tool_result` with a matching id
+  or the next request is rejected outright. So a failed fetch, an
+  unknown tool, or a URL skipped because the budget ran out all return
+  an `is_error` result explaining why — never silence. That's why the
+  "return nothing" in your spec is implemented as "return an
+  explanation that there's nothing," which also stops the model
+  inventing page contents.
+
+- Two things I added that you didn't ask for, both of which I'd argue
+  are load-bearing rather than speculative: a 5-round loop cap
+  (`CLAUDE_CHAT_MAX_TOOL_ROUNDS`), because the time budget alone
+  doesn't stop many fast cheap fetches; and a 20,000-character cap on
+  extracted page text, because at Max Tokens 8000 a single unbounded
+  page can crowd out your entire Prefix Prompt. Delete either if you
+  disagree.
+
+**Known limitations**
+
+- `cResponseN` is checked between steps, so a slow Claude API call can
+  overrun it — the API timeout is still 60s. Clamping it means picking
+  a per-call timeout, which felt like your call to make, not mine.
+
+- An empty pre-fetch result gets cached for the full hour. If
+  `indivisiblepv.info` is down when the cache expires, you get an hour
+  of no reference content. Shorter TTL for the empty case would fix
+  it; I left it simple.
+
+- Saving the settings page with an unchanged URL list does *not*
+  refresh the cache — the transient key is a hash of the list, so only
+  editing the list busts it.
+
+- I couldn't run `php -l` (no PHP in this environment), so this is
+  checked by inspection and a brace-balance pass, not by a parser. Run
+  the lint before you deploy.

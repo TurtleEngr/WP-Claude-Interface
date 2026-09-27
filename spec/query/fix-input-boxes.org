@@ -1,0 +1,4 @@
+** 2026-03-16 18:52:40 PDT Mon
+- Given following files, modify the CSS #claude-chat-input to
+  initially be 3 lines and allow the user to adjust the height Also
+  allow the user to make the #claude-chat-messages text box larger.

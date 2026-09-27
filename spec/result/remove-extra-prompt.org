@@ -1,0 +1,43 @@
+* Remove extra prompt resul
++ I'll remove all the "Additional prompt" / claude_chat_addon code
+  from the three files. Let me create the cleaned-up versions.Created
+  3 files, read a fileCreated 3 files, read a fileHere's a summary of
+  what was removed from each file: claude.php
+
+** Summary
+
++ The three register_setting() calls for
+  claude_chat_addon_prompt_enabled, claude_chat_addon_prompt_label,
+  and claude_chat_addon_prompt_text
+
++ The addon_enabled key passed to wp_localize_script()
+
++ The $addon_enabled / $addon_label lookups and the <div
+  id="claude-chat-addon"> block inside the shortcode
+
++ The $addon_checked branch in claude_chat_ajax_handler() that
+  appended the addon text to the message
+
++ The add_settings_field() registration for claude_chat_addon_prompt
+
++ The entire claude_chat_addon_prompt_callback() function
+
+** js/claude-chat.js
+
++ The addonEnabled variable and the #claude-chat-addon-checkbox /
+  claudeChat.addon_enabled logic
+
++ The addon_enabled field from the AJAX data payload
+
+** css/claude-chat.css
+
++ The #claude-chat-addon, #claude-chat-addon label, and
+  #claude-chat-addon input[type="checkbox"] rule blocks
+
+** Note
++ One thing to note: the stored option values
+  (claude_chat_addon_prompt_enabled, …_label, …_text) will remain in
+  the WordPress wp_options table after this change — they're just no
+  longer read or written. If you want them gone too, you could add a
+  one-shot delete_option() cleanup on plugin activation/upgrade, or
+  remove them manually.

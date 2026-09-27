@@ -1,0 +1,48 @@
+Given the files listed below, please fix the following security issues.
+
+----------
+Security Issues
+
+1. XSS via Unescaped API Response (Critical)
+
+In `claude-chat.js`, Claude's response is injected raw into the DOM:
+Fix: Use `.text()` to set content, or escape before inserting
+
+2. Prefix Prompt Should Use the `system` Parameter
+
+Currently, the prefix prompt is bundled into the user message content
+array. This has two weaknesses:
+
+- It can be seen or partially undermined by a user who crafts a
+  message like *"Ignore previous instructions..."*
+
+- It doesn't benefit from Claude's distinct system-prompt handling
+
+Fix: Move the prefix prompt to the dedicated `system` field, which is
+architecturally separate from the conversation:
+
+3. Addon Prompt Exposed to All Visitors (High)
+
+In `claude.php`, the addon prompt text is passed to every page visitor
+via `wp_localize_script`:
+
+Fix: Remove `addon_prompt` from `wp_localize_script`
+entirely. Instead, pass only a flag indicating whether the checkbox
+was checked, and append the prompt **server-side**:
+
+JS only sends a boolean flag
+
+4. API Key Stored and Displayed in Plaintext (Medium)
+
+Fix: Mask the field.
+
+5. No Rate Limiting (Medium)
+
+The `wp_ajax_nopriv_claude_chat` action is open to all unauthenticated
+users with no throttling. A bot could hammer it and drain your API
+credits.
+
+Fix: Add a simple transient-based rate limit to 10 requests per min per IP
+
+----------
+Files

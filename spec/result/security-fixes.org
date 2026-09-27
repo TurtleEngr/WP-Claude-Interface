@@ -1,0 +1,262 @@
+* Security Fixes
+Given the following files, what can be done to make this more secure
+and preserve the initial prompt.
+
+
+Here's a thorough breakdown of the security issues and prompt-preservation weaknesses, followed by concrete fixes for each.
+
+---
+
+## Security Issues
+
+### 1. XSS via Unescaped API Response (Critical)
+
+In `claude-chat.js`, Claude's response is injected raw into the DOM:
+
+```js
+// VULNERABLE
+$('#claude-chat-messages').append('<div class="claude-message">' + response.data + '</div>');
+```
+
+If the API ever returns content with `<script>` tags or other HTML (e.g., if a user crafts a prompt that tricks the model), it executes in the browser.
+
+**Fix:** Use `.text()` to set content, or escape before inserting:
+
+```js
+var $msg = $('<div class="claude-message"></div>').text(response.data);
+$('#claude-chat-messages').append($msg);
+
+// Same fix for the user message display:
+var $userMsg = $('<div class="user-message"></div>').text($('#claude-chat-input').val());
+$('#claude-chat-messages').append($userMsg);
+```
+
+---
+
+### 2. Addon Prompt Exposed to All Visitors (High)
+
+In `claude.php`, the addon prompt text is passed to every page visitor via `wp_localize_script`:
+
+```php
+'addon_prompt' => get_option('claude_chat_addon_prompt_text', ''),
+```
+
+This means any visitor can open DevTools, read your carefully crafted prompt, modify it client-side before sending, or completely bypass the checkbox. The prompt should **never** leave the server.
+
+**Fix:** Remove `addon_prompt` from `wp_localize_script` entirely. Instead, pass only a flag indicating whether the checkbox was checked, and append the prompt **server-side**:
+
+```php
+// In wp_localize_script — remove addon_prompt, keep only the checkbox state signal
+wp_localize_script('claude-chat-script', 'claudeChat', array(
+    'ajax_url' => admin_url('admin-ajax.php'),
+    'nonce'    => wp_create_nonce('claude-chat-nonce'),
+    // No addon_prompt here
+));
+```
+
+```js
+// JS only sends a boolean flag
+data: {
+    action:      'claude_chat',
+    nonce:       claudeChat.nonce,
+    message:     message,
+    addon_active: ($addonCheckbox.length && $addonCheckbox.is(':checked')) ? '1' : '0'
+}
+```
+
+```php
+// PHP handler appends the prompt server-side
+function claude_chat_ajax_handler() {
+    check_ajax_referer('claude-chat-nonce', 'nonce');
+    $message      = sanitize_text_field($_POST['message']);
+    $addon_active = isset($_POST['addon_active']) && $_POST['addon_active'] === '1';
+
+    if ($addon_active && get_option('claude_chat_addon_prompt_enabled') === '1') {
+        $addon_text = get_option('claude_chat_addon_prompt_text', '');
+        if ($addon_text !== '') {
+            $message .= "\n" . $addon_text;
+        }
+    }
+    // ...
+}
+```
+
+---
+
+### 3. API Key Stored and Displayed in Plaintext (Medium)
+
+The API key is stored in `wp_options` (readable by any plugin/admin) and shown in a plain `<input type="text">` field. If an admin account is compromised, the key is immediately visible.
+
+**Fix:** Mask the field and obfuscate stored value:
+
+```php
+// Store encrypted
+function claude_chat_text_field_callback($args) {
+    $option = get_option($args['label_for']);
+    $display = ($args['label_for'] === 'claude_chat_api_key' && !empty($option))
+        ? str_repeat('*', 20) . substr($option, -4)  // show only last 4 chars
+        : esc_attr($option);
+    echo '<input type="password" ...>';
+}
+```
+
+Also add a sanitize callback that preserves the existing key if the masked placeholder is submitted:
+
+```php
+register_setting('claude_chat_options', 'claude_chat_api_key', [
+    'sanitize_callback' => function($new_val) {
+        // If the user didn't change the masked value, keep the existing key
+        if (preg_match('/^\*+\d{4}$/', $new_val)) {
+            return get_option('claude_chat_api_key');
+        }
+        return sanitize_text_field($new_val);
+    }
+]);
+```
+
+---
+
+### 4. No Model Validation Server-Side (Medium)
+
+The model is read from `wp_options` but never validated against the list of known models before being sent to the API. If `wp_options` is tampered with (e.g., via another vulnerable plugin), an arbitrary string reaches Anthropic's API.
+
+**Fix:**
+
+```php
+$model = get_option('claude_chat_model');
+if (!array_key_exists($model, CLAUDE_MODELS)) {
+    claude_chat_log_error('Invalid Model', 'Model "' . $model . '" is not in the allowed list.');
+    return 'Error: Invalid model configuration.';
+}
+```
+
+---
+
+### 5. Error Log is Web-Accessible (Medium)
+
+```php
+$log_file = plugin_dir_path(__FILE__) . 'claude-chat-error.log';
+```
+
+This file is inside `wp-content/plugins/`, so it's accessible at `https://yoursite.com/wp-content/plugins/your-plugin/claude-chat-error.log`. Error messages may reveal internal details.
+
+**Fix:** Write logs outside the webroot, or add an `.htaccess` rule:
+
+```php
+// Option A: Use the WordPress uploads directory (still web-accessible but better)
+// Option B: Use sys_get_temp_dir() or a directory above ABSPATH
+$log_file = ABSPATH . '../logs/claude-chat-error.log';
+
+// Option C: Block via .htaccess — create a file at plugin root:
+// <Files "claude-chat-error.log">
+//     Order Allow,Deny
+//     Deny from all
+// </Files>
+```
+
+---
+
+### 6. No Rate Limiting (Medium)
+
+The `wp_ajax_nopriv_claude_chat` action is open to all unauthenticated users with no throttling. A bot could hammer it and drain your API credits.
+
+**Fix:** Add a simple transient-based rate limit per IP:
+
+```php
+function claude_chat_ajax_handler() {
+    check_ajax_referer('claude-chat-nonce', 'nonce');
+
+    $ip       = sanitize_text_field($_SERVER['REMOTE_ADDR']);
+    $rate_key = 'claude_rate_' . md5($ip);
+    $count    = (int) get_transient($rate_key);
+
+    if ($count >= 10) { // max 10 requests per minute per IP
+        wp_send_json_error('Rate limit exceeded. Please wait a moment.', 429);
+        return;
+    }
+    set_transient($rate_key, $count + 1, 60); // 60-second window
+
+    // ... rest of handler
+}
+```
+
+---
+
+## Prompt Preservation Issues
+
+### 7. Prefix Prompt Should Use the `system` Parameter
+
+Currently, the prefix prompt is bundled into the user message content array. This has two weaknesses:
+
+- It can be seen or partially undermined by a user who crafts a message like *"Ignore previous instructions..."*
+- It doesn't benefit from Claude's distinct system-prompt handling
+
+**Fix:** Move the prefix prompt to the dedicated `system` field, which is architecturally separate from the conversation:
+
+```php
+$body = array(
+    'model'      => $model,
+    'max_tokens' => intval($max_tokens),
+    'messages'   => array(
+        array('role' => 'user', 'content' => $message),
+    ),
+);
+
+if ($prefix_prompt !== '') {
+    $body['system'] = array(
+        array(
+            'type'          => 'text',
+            'text'          => $prefix_prompt,
+            'cache_control' => array('type' => 'ephemeral'),
+        )
+    );
+}
+```
+
+This is the correct way to cache a system prompt per [Anthropic's
+prompt-caching docs](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching),
+and it keeps the instruction layer cleanly separated from user input.
+
+---
+
+### 8. `sanitize_text_field` Strips Newlines from Messages
+
+```php
+$message = sanitize_text_field($_POST['message']);
+```
+
+`sanitize_text_field` removes newlines, which breaks multi-line user
+inputs. Use `sanitize_textarea_field` instead:
+
+```php
+$message = sanitize_textarea_field($_POST['message']);
+```
+
+---
+
+## Summary Table
+
+| # | Issue                                       | Severity         | File                            |
+|---+---------------------------------------------+------------------+---------------------------------|
+| 1 | XSS via raw `response.data` in DOM          | Critical         | `claude-chat.js`                |
+| 2 | Addon prompt leaked to frontend, bypassable | High             | `claude.php` / `claude-chat.js` |
+| 3 | API key in plaintext input                  | Medium           | `claude.php`                    |
+| 4 | No server-side model validation             | Medium           | `claude.php`                    |
+| 5 | Error log web-accessible                    | Medium           | `claude.php`                    |
+| 6 | No rate limiting on AJAX endpoint           | Medium           | `claude.php`                    |
+| 7 | Prefix prompt in user message, not `system` | Prompt integrity | `claude.php`                    |
+| 8 | `sanitize_text_field` strips newlines       | Low/UX           | `claude.php`                    |
+
+Items 1, 2, and 7 are the most impactful to fix first — XSS is an
+immediate user risk, the leaked addon prompt undermines your entire
+prompt design, and moving the prefix to `system` is both a security
+and correctness improvement.
+
+XSS via raw response.data in DOM (Critical)
+Addon prompt leaked to frontend, bypassable (High)
+API key in plaintext input (Medium)
+No server-side model validation (Medium)
+Error log web-accessible (Medium)
+No rate limiting on AJAX endpoint (Medium)
+Prefix prompt in user message, not system (Prompt integrity)
+sanitize_text_field strips newlines (Low/UX)

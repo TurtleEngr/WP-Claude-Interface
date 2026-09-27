@@ -1,0 +1,19 @@
+- Given following files, add an additional prompt text box to the
+  settings form.
+
+Settings form:
+- It should have a checkbox to activate or deactivate the prompt.
+  After the check box is an input field that will be the label that
+  will be put after the check box on the user's input box.
+- The addition prompt text box would be put after the check box and
+  label field.
+- If the check box is checked, then a check box and its label will be
+  added to the user's form.
+
+User from:
+- Add a check box before the input field, if the additional prompt check
+  box is checked in the settings form.
+- After the check box, put the label text that came from the settings form.
+- If the user checks the box, the "additional prompt" will be appended
+  to the main prompt, but only if the check box in the setting form is
+  also checked.

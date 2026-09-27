@@ -1,0 +1,29 @@
+I'll add:
+1. A server-side `admin_post` handler to delete both log files
+2. A "Clear Logs" button (in its own `<form>`) rendered just below the
+   Save Settings form on the settings page
+
+The button lives in a separate `<form>` because HTML doesn't allow
+nested forms.Let me create the file with all the changes
+applied:Here's a summary of everything added — only `claude.php`
+needed changes:
+
+**New function: `claude_chat_clear_logs()`** (hooked to
+`admin_post_claude_chat_clear_logs`)
+- Verifies the user has `manage_options` capability
+- Validates a nonce before doing anything (`check_admin_referer`)
+- Iterates over both `claude_log.org` and `claude.log`, resolving
+  their paths via the existing `claude_chat_get_log_path()` helper,
+  and deletes each with `wp_delete_file()` if it exists
+
+- Redirects back to the settings page with `?logs-cleared=1`
+
+**Updated `claude_chat_settings_page_html()`**
+- Shows a green success notice when `?logs-cleared=1` is present in
+  the URL
+- Adds a second `<form>` (separate from the Save Settings form — HTML
+  forbids nesting forms) that POSTs to `admin-post.php` with the
+  `clear_logs` action and a nonce field
+- Uses `submit_button('Clear Logs', 'delete', ...)` so WordPress
+  styles it as a red destructive-action button, visually distinct from
+  "Save Settings"

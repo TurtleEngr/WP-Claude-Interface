@@ -1,0 +1,4 @@
+Given following files, add a button to the setting form that will
+remove the files: claude_log.org and claude.log The button should be
+named "Clear Logs".
+

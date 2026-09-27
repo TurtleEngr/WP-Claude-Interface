@@ -1,0 +1,16 @@
+Given the following files, modify them to log the user's input
+$message, and the Claude response $response.  wp_upload_dir() file
+name claude_log.org I.e. the file should be accessable at
+https://indivisiblepv.info/wp-content/uploads/claude/claude_log.org
+The logging should be implemented with functions, and the names of the
+directory and file, in uploads, should be variables in the
+function. The format of claude_log.org is as follows
+
+** YYYY-MM-DD HH:MM message
+$message
+*** response
+$response
+
+The user message/response is separate from the claude_chat_log_error
+function. That function should log to:
+wp-content/uploads/claude/claude.log

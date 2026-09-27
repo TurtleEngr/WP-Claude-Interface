@@ -1,0 +1,59 @@
+- Now I have a clear picture of what's needed. Here are the changes to
+  `claude.php`:
+
+1. **New `claude_chat_log_message()`** — logs user/response pairs to
+   `claude_log.org` in org-mode format
+2. **Refactored `claude_chat_log_error()`** — now uses
+   `wp_upload_dir()` → `uploads/claude/claude.log`
+3. **Both share a private helper** `claude_chat_get_log_path()` that
+   holds the directory/file name variables
+4. **Call site** added in `claude_chat_api_request()` on success
+5. **`.htaccess`** updated to protect both log filesHere's a summary
+   of every change made:
+
+---
+
+*** `claude.php` — three additions
+
+**`claude_chat_get_log_path( $log_subdir, $log_file )`** (new private helper)
+Calls `wp_upload_dir()`, builds the path `basedir/$log_subdir/$log_file`, creates the subdirectory with `wp_mkdir_p()` if it doesn't exist, and returns the absolute path. The directory name (`'claude'`) and file name are plain variables — change them in one place.
+
+**`claude_chat_log_message( $message, $response )`** (new)
+Calls the helper with `$log_subdir = 'claude'` and `$log_file = 'claude_log.org'`, then appends an entry in the exact org-mode format you specified:
+```
+xx 2025-04-04 14:32 message
+<user message>
+xxx response
+<claude response>
+```
+
+**`claude_chat_log_error( $error_type, $error_message )`** (replaced)
+Now uses the same helper with `$log_file = 'claude.log'` instead of the old `plugin_dir_path()` approach. Error entries are structurally unchanged.
+
+**`claude_chat_api_request()`** — one new line added after the successful API response branch:
+```php
+claude_chat_log_message( $message, $response_text );
+```
+
+---
+
+*** `.htaccess` (plugin root)
+Unchanged — still guards the legacy `claude-chat-error.log` in case it exists.
+
+*** `uploads-claude-.htaccess` (new — deploy to `wp-content/uploads/claude/`)
+Rename this to `.htaccess` and drop it into `wp-content/uploads/claude/`. It denies direct HTTP access to all `.log` and `.org` files in that directory, so neither `claude.log` nor `claude_log.org` is publicly readable even though they live under `uploads/`.
+
+** Correction: move claude-chat-error.log to wp-content/uploads/claude/
+
+Small fix — the plugin-root `.htaccess` no longer needs to guard
+`claude-chat-error.log` since that file doesn't exist there
+anymore. The `claude_chat_log_error()` function already writes to
+`uploads/claude/claude.log` (covered by the uploads `.htaccess`).The
+plugin-root `.htaccess` now just carries a comment explaining where
+the logs went. All log protection is handled by
+`uploads/claude/.htaccess` (`uploads-claude-.htaccess` in the
+download), which blocks web access to both `claude.log` and
+`claude_log.org`. No changes needed to `claude.php` — it was already
+writing both files to `uploads/claude/`.
+
+See log-chat.zip

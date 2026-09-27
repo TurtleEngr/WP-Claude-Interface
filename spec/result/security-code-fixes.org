@@ -1,0 +1,23 @@
+
+I'll implement all six fixes across the two files. Let me build them carefully.Here's a summary of every change made and why:
+
+---
+
+**Fix #1 — XSS via Unescaped API Response (`claude-chat.js`)**
+Both the user message and Claude's response are now set with jQuery's `.text()` instead of string-concatenated HTML. This means angle brackets, quotes, and any other characters from either source are rendered as literal text, not executed as HTML.
+
+**Fix #2 — Prefix Prompt in `system` Parameter (`claude.php`)**
+The prefix prompt is now sent in the dedicated `system` field of the API request body (as an array block so `cache_control` is preserved). It is no longer bundled as the first content block of the user message, so "Ignore previous instructions…"-style inputs cannot touch it, and Claude handles it with its distinct system-prompt logic.
+
+**Fix #3 — Addon Prompt Exposed to Visitors (`claude.php` + `claude-chat.js`)**
+`addon_prompt` text is removed from `wp_localize_script` entirely. The JS now sends only a `'1'`/`'0'` boolean flag (`addon_enabled`). The AJAX handler reads the stored prompt text server-side and appends it — the prompt text never reaches the browser.
+
+**Fix #4 — API Key in Plaintext (`claude.php`)**
+The `claude_chat_text_field_callback` for the API key is replaced with a dedicated `claude_chat_api_key_field_callback` that renders `type="password"` with `autocomplete="new-password"`, masking the key in the admin UI.
+
+**Fix #5 — No Rate Limiting (`claude.php`)**
+A new `claude_chat_check_rate_limit()` function uses WordPress transients keyed on the MD5 of the visitor's IP. It allows a maximum of 10 requests per 60-second window; requests beyond that receive an error response before any API call is made.
+
+**Fix #6 — `sanitize_text_field` Strips Newlines (`claude.php`)**
+`$_POST['message']` is now sanitized with `sanitize_textarea_field`, which preserves newlines so multi-line messages aren't mangled before they reach the API.
+
